@@ -1,13 +1,23 @@
 import supabase from './utils/supabase';
 
-// Supabase-backed auth helper. Profile resolution is intentionally defensive:
-// login must never turn a valid Supabase user into a vague "profile missing"
-// message without exposing the actual database/RLS problem.
+// Supabase-backed auth helper.
+// Profile reads use the SECURITY DEFINER RPC so the application does not
+// depend on recursive profiles-table RLS policies during login.
 
 async function loadProfile(user) {
-  if (!user?.id) return { profile: null, error: new Error('Supabase returned no user id') };
+  if (!user?.id) {
+    return { profile: null, error: new Error('Supabase returned no user id') };
+  }
 
-  // Primary lookup: profiles.id is the auth.users id.
+  // Primary production path: get_my_profile() uses auth.uid() server-side.
+  const { data: rpcData, error: rpcError } = await supabase.rpc('get_my_profile');
+
+  if (!rpcError) {
+    const profile = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+    if (profile) return { profile, error: null };
+  }
+
+  // Fallback keeps compatibility if the RPC has not reached an environment yet.
   const primary = await supabase
     .from('profiles')
     .select('*')
@@ -18,8 +28,7 @@ async function loadProfile(user) {
     return { profile: primary.data, error: null };
   }
 
-  // Diagnostic fallback. This also helps if an older profile row was created
-  // with a mismatched id but the email is correct. It does NOT bypass RLS.
+  // Diagnostic email fallback. This does not bypass RLS.
   if (user.email) {
     const fallback = await supabase
       .from('profiles')
@@ -33,11 +42,18 @@ async function loadProfile(user) {
 
     return {
       profile: null,
-      error: primary.error || fallback.error || new Error('No matching profile row found')
+      error:
+        rpcError ||
+        primary.error ||
+        fallback.error ||
+        new Error('No matching profile row found')
     };
   }
 
-  return { profile: null, error: primary.error || new Error('No matching profile row found') };
+  return {
+    profile: null,
+    error: rpcError || primary.error || new Error('No matching profile row found')
+  };
 }
 
 function formatProfileError(error) {
