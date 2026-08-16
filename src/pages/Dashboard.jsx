@@ -3,6 +3,7 @@ import { formatDate } from "../storage";
 import CanIBunk from "../components/CanIBunk";
 import { useToast } from "../components/Toast";
 import { computeStudentOverall } from "../utils/attendance";
+import StatCard from '../components/ui/StatCard';
 
 export default function Dashboard({ students, attendance, setAttendance, goTo }) {
   const today = formatDate();
@@ -83,39 +84,12 @@ export default function Dashboard({ students, attendance, setAttendance, goTo })
         </div>
       </header>
 
-      <section className="stats">
-        <div className="stat-card">
-          <div className="stat-icon blue">◉</div>
-          <div>
-            <span>Total Students</span>
-            <strong>{total}</strong>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon green">✓</div>
-          <div>
-            <span>Present Today</span>
-            <strong>{presentCount}</strong>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon red">×</div>
-          <div>
-            <span>Absent Today</span>
-            <strong>{absentCount}</strong>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon purple">%</div>
-          <div>
-            <span>Attendance Rate</span>
-            <strong>{attendancePercentage}%</strong>
-          </div>
-        </div>
-      </section>
+        <section className="stats">
+          <StatCard title="Total Students" value={total} icon={'◉'} />
+          <StatCard title="Present Today" value={presentCount} icon={'✓'} />
+          <StatCard title="Absent Today" value={absentCount} icon={'×'} />
+          <StatCard title="Attendance Rate" value={`${attendancePercentage}%`} icon={'%'} />
+        </section>
 
           <section style={{marginTop:18}}>
             <CanIBunk students={students} attendance={attendance} />
