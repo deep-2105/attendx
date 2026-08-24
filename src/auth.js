@@ -1,23 +1,24 @@
 import supabase from './utils/supabase';
 
 // Supabase-backed auth helper.
-// Profile reads use the SECURITY DEFINER RPC so the application does not
-// depend on recursive profiles-table RLS policies during login.
+// Production profile reads use the SECURITY DEFINER RPC. The direct table
+// lookup is only a compatibility fallback when the RPC is unavailable.
 
 async function loadProfile(user) {
   if (!user?.id) {
     return { profile: null, error: new Error('Supabase returned no user id') };
   }
 
-  // Primary production path: get_my_profile() uses auth.uid() server-side.
   const { data: rpcData, error: rpcError } = await supabase.rpc('get_my_profile');
 
   if (!rpcError) {
     const profile = Array.isArray(rpcData) ? rpcData[0] : rpcData;
     if (profile) return { profile, error: null };
+    return { profile: null, error: new Error('No matching AttendX profile found') };
   }
 
-  // Fallback keeps compatibility if the RPC has not reached an environment yet.
+  // Compatibility path for environments where the RPC has not been deployed.
+  // Do not treat a normal RLS denial as a successful empty profile.
   const primary = await supabase
     .from('profiles')
     .select('*')
@@ -28,31 +29,12 @@ async function loadProfile(user) {
     return { profile: primary.data, error: null };
   }
 
-  // Diagnostic email fallback. This does not bypass RLS.
-  if (user.email) {
-    const fallback = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('email', user.email)
-      .maybeSingle();
-
-    if (!fallback.error && fallback.data) {
-      return { profile: fallback.data, error: null };
-    }
-
-    return {
-      profile: null,
-      error:
-        rpcError ||
-        primary.error ||
-        fallback.error ||
-        new Error('No matching profile row found')
-    };
-  }
-
   return {
     profile: null,
-    error: rpcError || primary.error || new Error('No matching profile row found')
+    error:
+      primary.error ||
+      rpcError ||
+      new Error('No matching AttendX profile found')
   };
 }
 
@@ -134,7 +116,7 @@ export async function signOut() {
 }
 
 export const DEMO = {
-  professor: { email: 'professor@attendx.demo' },
+  professor: { email: 'professor@attendx.com' },
   studentPassword: 'student123',
 };
 
