@@ -34,27 +34,32 @@ function App() {
     saveAttendance(attendance);
   }, [attendance]);
 
+  // Do not query protected Supabase tables before authentication. The old
+  // implementation fetched profiles/attendance on first render, which caused
+  // a flood of 401/403 requests and made the UI look broken before login.
   useEffect(() => {
     let mounted = true;
+    if (!session || !db.isSupabaseConfigured()) return undefined;
+
     (async () => {
-      if (!db.isSupabaseConfigured()) return;
       try {
         const [s, a] = await Promise.all([db.fetchStudents(), db.fetchAttendance()]);
         if (!mounted) return;
         setStudents(s);
         setAttendance(a);
       } catch (e) {
-        console.warn('Supabase sync failed', e);
+        console.warn('Supabase sync failed after authentication', e);
       }
     })();
+
     return () => { mounted = false; };
-  }, []);
+  }, [session]);
 
   const setStudentsWrapper = (updater) => {
     setStudents((cur) => {
       const next = typeof updater === 'function' ? updater(cur) : updater;
       (async () => {
-        if (!db.isSupabaseConfigured()) return;
+        if (!db.isSupabaseConfigured() || !session) return;
         const added = next.filter(n => !cur.find(c => c.id === n.id));
         const removed = cur.filter(c => !next.find(n => n.id === c.id));
         const maybeUpdated = next.filter(n => cur.find(c => c.id === n.id && JSON.stringify(c) !== JSON.stringify(n)));
@@ -74,7 +79,7 @@ function App() {
     setAttendance((cur) => {
       const next = typeof updater === 'function' ? updater(cur) : updater;
       (async () => {
-        if (!db.isSupabaseConfigured()) return;
+        if (!db.isSupabaseConfigured() || !session) return;
         try {
           for (const day of next) {
             await db.upsertAttendanceRecordsForDate(day.date, day.records);
@@ -88,8 +93,6 @@ function App() {
   };
 
   function handleLogin(newSession) {
-    // Login pages already fetched the profile. Keep that exact session instead
-    // of immediately replacing it with a second, potentially stale profile query.
     setSession(newSession);
     const role = newSession?.profile?.role;
     setActive(role === 'professor' ? 'dashboard' : role === 'student' ? 'student-dashboard' : 'landing');
@@ -101,12 +104,6 @@ function App() {
     setActive('landing');
   }
 
-  // Initialize the authenticated session once on page load.
-  // IMPORTANT: do not call supabase.auth.getSession() from inside the
-  // onAuthStateChange callback. Supabase warns that doing so can deadlock or
-  // race the auth lock. The previous app had two listeners doing exactly that,
-  // which could replace a valid { user, profile } session with { user, null }
-  // and immediately trigger RequireRole -> AccessDenied.
   useEffect(() => {
     let mounted = true;
 
@@ -123,9 +120,6 @@ function App() {
     })();
 
     const { data } = supabase.auth.onAuthStateChange((event) => {
-      // Only clear local app state on an actual sign-out. Do not refetch the
-      // profile inside this callback; login pages and the initial loader handle
-      // profile resolution outside the auth callback.
       if (event === 'SIGNED_OUT' && mounted) {
         setSession(null);
         setActive('landing');
