@@ -1,4 +1,3 @@
-import React from 'react';
 
 export default function LoadingSpinner({ size=36 }){
   return (

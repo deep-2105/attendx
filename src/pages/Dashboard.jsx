@@ -1,180 +1,298 @@
-import React, { useMemo, useState } from "react";
-import { formatDate } from "../storage";
-import CanIBunk from "../components/CanIBunk";
-import { useToast } from "../components/Toast";
-import { computeStudentOverall } from "../utils/attendance";
-import StatCard from '../components/ui/StatCard';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { formatDate } from '../storage';
+import { computeStudentOverall } from '../utils/attendance';
 
-export default function Dashboard({ students, attendance, setAttendance, goTo }) {
+const TREND = [
+  { date: 'Aug 1', pct: 58 },
+  { date: 'Aug 5', pct: 64 },
+  { date: 'Aug 8', pct: 69 },
+  { date: 'Aug 12', pct: 63 },
+  { date: 'Aug 16', pct: 74 },
+  { date: 'Aug 20', pct: 79 },
+  { date: 'Aug 24', pct: 87 },
+];
+
+export default function Dashboard({ students, attendance, goTo }) {
   const today = formatDate();
   const todayRecord = attendance.find((a) => a.date === today) || { records: [] };
-
   const presentCount = todayRecord.records.filter((r) => r.present).length;
   const total = students.length;
-  const absentCount = total - presentCount;
+  const absentCount = Math.max(0, total - presentCount);
   const attendancePercentage = total ? Math.round((presentCount / total) * 100) : 0;
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('attendance');
+  const [progress, setProgress] = useState(0);
+  const [hoveredPoint, setHoveredPoint] = useState(null);
+  const [donutHover, setDonutHover] = useState(null);
+  const chartRef = useRef(null);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return students;
-    return students.filter(
-      (s) => s.name.toLowerCase().includes(q) || s.roll.toLowerCase().includes(q)
+  useEffect(() => {
+    const node = chartRef.current;
+    if (!node) return undefined;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+
+        const start = performance.now();
+        const duration = 1200;
+        let frame = 0;
+
+        const tick = (now) => {
+          const t = Math.min((now - start) / duration, 1);
+          const eased = 1 - Math.pow(1 - t, 3);
+          setProgress(eased);
+          if (t < 1) frame = requestAnimationFrame(tick);
+        };
+
+        frame = requestAnimationFrame(tick);
+        observer.disconnect();
+        return () => cancelAnimationFrame(frame);
+      },
+      { threshold: 0.3 }
     );
-  }, [students, search]);
 
-  const toast = useToast();
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
-  const toggleStudent = (id) => {
-    const before = computeStudentOverall(id, students, attendance);
-    // simulate new attendance array
-    const newAttendance = attendance.slice();
-    let rec = newAttendance.find((r) => r.date === today);
-    if (!rec) {
-      rec = { date: today, records: [] };
-      newAttendance.push(rec);
-    }
-    const existing = rec.records.find((r) => r.studentId === id);
-    if (existing) existing.present = !existing.present;
-    else rec.records.push({ studentId: id, present: true });
-
-    setAttendance(newAttendance);
-
-    const after = computeStudentOverall(id, students, newAttendance);
-
-    // small randomized messages
-    const messagesPresent = ["Attendance secured.", "Nice. Future-you approves."];
-    const messagesAbsent = ["Another one bites the attendance percentage.", "Your attendance just felt that."];
-    const msgList = after.pct >= before.pct ? messagesPresent : messagesAbsent;
-    toast.show(msgList[Math.floor(Math.random()*msgList.length)]);
-
-    // smart moments
-    if (before.pct < 75 && after.pct >= 75) toast.show("75% unlocked. You're safe.");
-    if (before.pct >= 75 && after.pct < 75) toast.show("Uh oh. Attendance alert.");
-    if (after.pct >= 90 && before.pct < 90) toast.show("90% club unlocked.");
-    if (after.pct === 100 && before.pct < 100) toast.show("Perfect attendance. Respect.");
-  };
-
-  const markAll = (present) => {
-    setAttendance((cur) => {
-      const copy = [...cur];
-      let rec = copy.find((r) => r.date === today);
-      if (!rec) {
-        rec = { date: today, records: [] };
-        copy.push(rec);
-      }
-      rec.records = students.map((s) => ({ studentId: s.id, present }));
-      return copy;
+  const chartPoints = useMemo(() => {
+    const minPct = 50;
+    const maxPct = 90;
+    const usableW = 248;
+    const usableH = 88;
+    return TREND.map((item, i) => {
+      const x = 12 + (i / (TREND.length - 1)) * usableW;
+      const normalized = (item.pct - minPct) / (maxPct - minPct);
+      const y = 98 - normalized * usableH;
+      return { ...item, x, y };
     });
-  };
+  }, []);
+
+  const trendPath = useMemo(
+    () => chartPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' '),
+    [chartPoints]
+  );
+
+  const visiblePoints = Math.max(1, Math.floor(progress * chartPoints.length));
+  const animatedPath = chartPoints
+    .slice(0, visiblePoints)
+    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`)
+    .join(' ');
+
+  const radius = 44;
+  const circumference = 2 * Math.PI * radius;
+  const presentRatio = total ? presentCount / total : 0;
+  const presentLen = circumference * presentRatio * progress;
+  const absentLen = circumference * (1 - presentRatio) * progress;
+
+  const rows = useMemo(() => {
+    return students.map((student) => {
+      const overall = computeStudentOverall(student.id, students, attendance);
+      const todayStatus = todayRecord.records.find((r) => r.studentId === student.id)?.present;
+      const status = overall.pct >= 75 ? (todayStatus ? 'Present' : 'Safe') : 'At Risk';
+      return {
+        id: student.id,
+        name: student.name,
+        roll: student.roll,
+        attendance: overall.pct,
+        status,
+      };
+    });
+  }, [students, attendance, todayRecord.records]);
+
+  const filteredRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    let list = rows.filter((row) => {
+      const matchesSearch = !q || row.name.toLowerCase().includes(q) || row.roll.toLowerCase().includes(q);
+      const matchesStatus = statusFilter === 'all' || row.status.toLowerCase() === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+
+    if (sortBy === 'name') list = list.sort((a, b) => a.name.localeCompare(b.name));
+    if (sortBy === 'roll') list = list.sort((a, b) => a.roll.localeCompare(b.roll));
+    if (sortBy === 'attendance') list = list.sort((a, b) => b.attendance - a.attendance);
+
+    return list;
+  }, [rows, search, statusFilter, sortBy]);
+
+  const atRiskCount = rows.filter((r) => r.status === 'At Risk').length;
+  const donutTooltip =
+    donutHover === 'present'
+      ? `Present - ${presentCount} students`
+      : donutHover === 'absent'
+      ? `Absent - ${absentCount} students`
+      : '';
 
   return (
-    <>
-      <header className="topbar">
+    <div className="ax-prof-dashboard ax-page-enter">
+      <header className="ax-prof-head">
         <div>
-          <p className="eyebrow">ATTENDANCE MANAGEMENT</p>
-          <h1>Dashboard</h1>
-          <p className="subtitle">Overview of today's attendance.</p>
+          <h1>Welcome back, Professor 👋</h1>
+          <p>Manage your classroom with confidence.</p>
         </div>
-
-        <div className="date-box">
-          <span>Today</span>
-          <strong>{today}</strong>
-        </div>
+        <div className="ax-date-pill">{today}</div>
       </header>
 
-        <section className="stats">
-          <StatCard title="Total Students" value={total} icon={'◉'} />
-          <StatCard title="Present Today" value={presentCount} icon={'✓'} />
-          <StatCard title="Absent Today" value={absentCount} icon={'×'} />
-          <StatCard title="Attendance Rate" value={`${attendancePercentage}%`} icon={'%'} />
-        </section>
+      <section className="ax-prof-kpis">
+        <article className="ax-prof-kpi"><span>Total Students</span><strong>{total}</strong></article>
+        <article className="ax-prof-kpi"><span>Present Today</span><strong>{Math.round(presentCount * progress)}</strong></article>
+        <article className="ax-prof-kpi"><span>Average Attendance</span><strong>{Math.round(attendancePercentage * progress)}%</strong></article>
+        <article className="ax-prof-kpi"><span>At Risk Students</span><strong>{Math.round(atRiskCount * progress)}</strong></article>
+      </section>
 
-          <section style={{marginTop:18}}>
-            <CanIBunk students={students} attendance={attendance} />
-          </section>
-
-      <section className="content-card">
-        <div className="section-header">
-          <div>
-            <h2>Today's Attendance</h2>
-            <p>Quick actions and list.</p>
+      <section className="ax-prof-charts" ref={chartRef}>
+        <article className="ax-card ax-prof-trend">
+          <div className="ax-section-head">
+            <h2>Attendance Trend</h2>
+            <span>This Month</span>
           </div>
 
-          <div style={{ display: "flex", gap: 8 }}>
-            <button className="add-button" onClick={() => goTo("students")}>Manage Students</button>
-            <button className="add-button" onClick={() => markAll(true)}>Mark All Present</button>
-            <button className="add-button" onClick={() => markAll(false)}>Mark All Absent</button>
+          <div className="ax-trend-chart">
+            <svg viewBox="0 0 280 120" preserveAspectRatio="none">
+              <path className="ax-trend-base" d={trendPath} />
+              <path className="ax-trend-line" d={animatedPath || trendPath} />
+              {chartPoints.map((p, index) => (
+                <circle
+                  key={p.date}
+                  cx={p.x}
+                  cy={p.y}
+                  r="4"
+                  className="ax-trend-point"
+                  style={{ opacity: index < visiblePoints ? 1 : 0 }}
+                  onMouseEnter={() => setHoveredPoint(index)}
+                  onMouseLeave={() => setHoveredPoint(null)}
+                />
+              ))}
+            </svg>
+
+            {hoveredPoint !== null && chartPoints[hoveredPoint] && (
+              <div
+                className="ax-chart-tooltip"
+                style={{
+                  left: `${(chartPoints[hoveredPoint].x / 280) * 100}%`,
+                  top: `${(chartPoints[hoveredPoint].y / 120) * 100}%`,
+                }}
+              >
+                <strong>{chartPoints[hoveredPoint].date}</strong>
+                <span>{chartPoints[hoveredPoint].pct}%</span>
+              </div>
+            )}
           </div>
+        </article>
+
+        <article className="ax-card ax-prof-donut-card">
+          <div className="ax-section-head">
+            <h2>Present vs Absent</h2>
+            <span>Today</span>
+          </div>
+
+          <div className="ax-donut-wrap">
+            <div className="ax-donut-shell" onMouseLeave={() => setDonutHover(null)}>
+              {donutTooltip && <div className="ax-donut-tooltip">{donutTooltip}</div>}
+              <svg className="ax-donut" viewBox="0 0 120 120">
+                <g transform="translate(60,60) rotate(-90)">
+                  <circle r={radius} className="ax-donut-track" />
+                  <circle
+                    r={radius}
+                    className={`ax-donut-segment present ${donutHover === 'present' ? 'active' : ''}`}
+                    strokeDasharray={`${presentLen} ${circumference - presentLen}`}
+                    strokeDashoffset="0"
+                    onMouseEnter={() => setDonutHover('present')}
+                  />
+                  <circle
+                    r={radius}
+                    className={`ax-donut-segment absent ${donutHover === 'absent' ? 'active' : ''}`}
+                    strokeDasharray={`${absentLen} ${circumference - absentLen}`}
+                    strokeDashoffset={-presentLen}
+                    onMouseEnter={() => setDonutHover('absent')}
+                  />
+                </g>
+              </svg>
+              <div className="ax-donut-center">
+                <strong>{Math.round(total * progress)}</strong>
+                <small>Total</small>
+              </div>
+            </div>
+
+            <div className="ax-donut-legend">
+              <div className={donutHover === 'present' ? 'active' : ''} onMouseEnter={() => setDonutHover('present')}>
+                <i className="present" /> Present {presentCount} ({total ? Math.round((presentCount / total) * 100) : 0}%)
+              </div>
+              <div className={donutHover === 'absent' ? 'active' : ''} onMouseEnter={() => setDonutHover('absent')}>
+                <i className="absent" /> Absent {absentCount} ({total ? Math.round((absentCount / total) * 100) : 0}%)
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section className="ax-card ax-prof-table-card">
+        <div className="ax-section-head">
+          <h2>Students Overview</h2>
+          <button className="ax-link-btn" onClick={() => goTo('students')}>View All →</button>
         </div>
 
-        <div className="toolbar">
-          <div className="search">
+        <div className="ax-table-toolbar">
+          <label className="ax-table-search">
             <span>⌕</span>
-            <input placeholder="Search student or roll number..." value={search} onChange={(e) => setSearch(e.target.value)} />
-          </div>
+            <input
+              placeholder="Search students..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </label>
 
-          <div className="summary">
-            <span className="dot green-dot"></span>
-            {presentCount} Present
-            <span className="dot red-dot"></span>
-            {absentCount} Absent
+          <div className="ax-table-filters">
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+              <option value="all">All</option>
+              <option value="present">Present</option>
+              <option value="safe">Safe</option>
+              <option value="at risk">At Risk</option>
+            </select>
+
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+              <option value="attendance">Sort by Attendance</option>
+              <option value="name">Sort by Name</option>
+              <option value="roll">Sort by Roll No</option>
+            </select>
           </div>
         </div>
 
-        <div className="table-wrapper">
-          <table>
+        <div className="ax-table-wrap">
+          <table className="ax-table">
             <thead>
               <tr>
-                <th>Student</th>
-                <th>Roll Number</th>
+                <th>Name</th>
+                <th>Roll No</th>
+                <th>Attendance</th>
                 <th>Status</th>
-                <th>Action</th>
               </tr>
             </thead>
-
             <tbody>
-              {filtered.map((s) => {
-                const r = todayRecord.records.find((rec) => rec.studentId === s.id);
-                const present = !!r && r.present;
-                return (
-                  <tr key={s.id}>
-                    <td>
-                      <div className="student">
-                        <div className="student-avatar">{s.name.charAt(0)}</div>
-                        <div>
-                          <strong>{s.name}</strong>
-                          <small>Student</small>
-                        </div>
-                      </div>
-                    </td>
-
-                    <td>{s.roll}</td>
-
-                    <td>
-                      <span className={present ? "status present" : "status absent"}>
-                        {present ? "● Present" : "● Absent"}
-                      </span>
-                    </td>
-
-                    <td>
-                      <button className={present ? "attendance-btn mark-absent" : "attendance-btn mark-present"} onClick={() => toggleStudent(s.id)}>
-                        {present ? "Mark Absent" : "Mark Present"}
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
+              {filteredRows.length === 0 && (
+                <tr>
+                  <td colSpan="4" className="ax-empty-cell">No matching students found.</td>
+                </tr>
+              )}
+              {filteredRows.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.name}</td>
+                  <td>{row.roll}</td>
+                  <td>{row.attendance}%</td>
+                  <td>
+                    <span className={`ax-status ${row.status === 'At Risk' ? 'risk' : 'present'}`}>
+                      {row.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
       </section>
-
-      <footer>
-        <span>AttendX</span>
-        <span>Smart Attendance Management System</span>
-      </footer>
-    </>
+    </div>
   );
 }

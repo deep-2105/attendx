@@ -1,36 +1,65 @@
-import React from 'react';
-import NavBar from '../components/NavBar';
-import Footer from '../components/Footer';
-import Button from '../components/ui/Button';
-
 export default function RoleSelection({ onNavigate }){
+  const handleRoleKey = (e, role) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onNavigate(role === 'student' ? 'student-login' : 'professor-login');
+    }
+  };
+
   return (
-    <div className="role-page">
-      <NavBar onNavigate={onNavigate} />
-
-      <main className="container" style={{padding:'80px 40px'}}>
-        <div style={{maxWidth:900,margin:'0 auto',textAlign:'center'}}>
-          <div className="eyebrow">Welcome to AttendX</div>
-          <h1>Choose how you want to continue</h1>
-          <p className="muted">Select your role to enter the appropriate portal.</p>
-
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:24,marginTop:28}}>
-            <div className="card" style={{padding:24,textAlign:'left'}}>
-              <h3>Student</h3>
-              <p className="muted">Personal attendance insights, trends and subjects.</p>
-              <div style={{marginTop:18}}><Button onClick={()=>onNavigate('student-login')}>Continue as Student →</Button></div>
-            </div>
-
-            <div className="card" style={{padding:24,textAlign:'left'}}>
-              <h3>Professor</h3>
-              <p className="muted">Manage classes, mark attendance and generate reports.</p>
-              <div style={{marginTop:18}}><Button onClick={()=>onNavigate('professor-login')}>Continue as Professor →</Button></div>
-            </div>
+    <div className="ax-role-page ax-page-enter">
+      <header className="ax-topbar ax-topbar-compact">
+        <div className="ax-brand">
+          <span className="ax-brand-mark">A</span>
+          <div>
+            <strong>AttendX</strong>
+            <small>Smart Attendance. Smarter Decisions.</small>
           </div>
         </div>
+
+        <div className="ax-topbar-actions">
+          <button className="ax-icon-btn" aria-label="Toggle theme">☼</button>
+          <button className="ax-ghost-btn" onClick={() => onNavigate('role-select')}>Login</button>
+        </div>
+      </header>
+
+      <main className="ax-role-main">
+        <h1>Welcome back!</h1>
+        <p>Choose your role to continue</p>
+
+        <div className="ax-role-grid">
+          <button
+            type="button"
+            className="ax-role-card student"
+            onClick={() => onNavigate('student-login')}
+            onKeyDown={(e) => handleRoleKey(e, 'student')}
+          >
+            <div className="ax-role-icon">🎓</div>
+            <div>
+              <h2>Student</h2>
+              <p>Track your attendance, analyze performance, and make smarter academic decisions.</p>
+              <span>Continue as Student →</span>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            className="ax-role-card professor"
+            onClick={() => onNavigate('professor-login')}
+            onKeyDown={(e) => handleRoleKey(e, 'professor')}
+          >
+            <div className="ax-role-icon">🪪</div>
+            <div>
+              <h2>Professor</h2>
+              <p>Manage classes, track attendance, identify at-risk students, and generate useful academic insights.</p>
+              <span>Continue as Professor →</span>
+            </div>
+          </button>
+        </div>
+
+        <footer className="ax-role-footer">© 2026 AttendX. University Specific Projects / ATTENDANCE SHORTAGE CALCULATOR</footer>
       </main>
 
-      <Footer />
     </div>
   );
 }

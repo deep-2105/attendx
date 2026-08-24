@@ -1,5 +1,3 @@
-import { formatDate } from "../storage";
-
 export function computeStudentOverall(studentId, students, attendance) {
   const days = attendance.slice().sort((a,b)=>a.date.localeCompare(b.date));
   const totalDays = days.length;
@@ -9,15 +7,9 @@ export function computeStudentOverall(studentId, students, attendance) {
 
   // classes needed to reach 75%: find minimal x >=0 such that (present + x) / (totalDays + x) >= 0.75
   let need = 0;
-  if (totalDays === 0) {
-    // with no history, define need as 0 (no classes recorded)
-    need = 0;
-  } else if (pct >= 75) {
-    need = 0;
-  } else {
+  if (totalDays > 0 && pct < 75) {
     let x = 0;
     while (true) {
-      const newPct = Math.round(((present + x) / (totalDays + x)) * 100);
       if ((present + x) / (totalDays + x) >= 0.75) {
         need = x;
         break;
@@ -29,11 +21,7 @@ export function computeStudentOverall(studentId, students, attendance) {
 
   // classes can miss while staying >=75%
   let canMiss = 0;
-  if (totalDays === 0) {
-    canMiss = 0;
-  } else if (pct < 75) {
-    canMiss = 0;
-  } else {
+  if (totalDays > 0 && pct >= 75) {
     // find max m >=0 such that present/(totalDays + m) >= 0.75
     const m = Math.floor((present / 0.75) - totalDays);
     canMiss = Math.max(0, m);

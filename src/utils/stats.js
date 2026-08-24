@@ -1,9 +1,5 @@
 import { formatDate } from "../storage";
 
-function parseDateISO(s) {
-  return new Date(s + "T00:00:00");
-}
-
 export function filterAttendanceByRange(attendance, range) {
   // range: { type: 'today'|'week'|'month'|'all', from: Date, to: Date }
   if (!attendance) return [];

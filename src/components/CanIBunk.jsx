@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { computeStudentOverall, attendanceStatusFromPct, computeStreak } from '../utils/attendance';
+import { useMemo, useState } from 'react';
+import { computeStudentOverall, computeStreak } from '../utils/attendance';
 import AttendanceStatus from './AttendanceStatus';
 
 export default function CanIBunk({ students, attendance }){

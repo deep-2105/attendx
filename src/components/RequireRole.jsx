@@ -1,4 +1,3 @@
-import React from 'react';
 import AccessDenied from './AccessDenied';
 
 export default function RequireRole({ session, role, children }){

@@ -1,4 +1,3 @@
-import React from 'react';
 
 export default function Button({ children, variant = 'primary', onClick, className='', type='button', ...rest }){
   const base = 'btn ' + (variant === 'primary' ? 'btn-primary' : variant === 'ghost' ? 'btn-ghost' : 'btn-outline');

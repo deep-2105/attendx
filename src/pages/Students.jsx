@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { formatDate } from "../storage";
 import AttendanceStatus from "../components/AttendanceStatus";
 

@@ -1,31 +1,39 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import auth from '../auth';
-import Button from '../components/ui/Button';
-import Card from '../components/ui/Card';
 
 export default function StudentLogin({ students, onLogin, onBack }){
-  const [roll, setRoll] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [remember, setRemember] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function submit(e){
     e.preventDefault();
     setError('');
+    setSuccess('');
+    if (!identifier.trim() || !password.trim()) {
+      setError('Please enter your email or roll number and password.');
+      return;
+    }
+
     setLoading(true);
     // For Supabase flow, we accept email or roll as identifier. If the user typed a roll, try to map to email via students list.
-    let identifier = roll;
-    const s = (students || []).find(x => String(x.roll) === String(roll));
-    if (s && s.email) identifier = s.email;
+    let loginId = identifier.trim();
+    const s = (students || []).find(x => String(x.roll).toLowerCase() === String(identifier).toLowerCase());
+    if (s && s.email) loginId = s.email;
 
-    const res = await auth.signInWithEmail(identifier, password);
+    const res = await auth.signInWithEmail(loginId, password);
     setLoading(false);
     if(res.ok){
       const session = res.session;
       if(!session.profile || session.profile.role !== 'student'){
-        setError('This account is not a student or profile is missing.');
+        setError('Your account is authenticated, but your AttendX profile could not be found.');
         return;
       }
+      setSuccess('Login successful. Redirecting to your dashboard...');
       onLogin(session);
     } else {
       setError(res.error || 'Login failed');
@@ -33,36 +41,79 @@ export default function StudentLogin({ students, onLogin, onBack }){
   }
 
   return (
-    <div className="auth-shell">
-      <div className="auth-left">
-        <div className="auth-branding">
-          <div className="brand-icon">A</div>
-          <h2>AttendX</h2>
-          <p className="muted">Stay ahead of your attendance.</p>
+    <div className="ax-auth-page ax-page-enter">
+      <section className="ax-auth-brand-panel">
+        <div className="ax-brand">
+          <span className="ax-brand-mark">A</span>
+          <div>
+            <strong>AttendX</strong>
+            <small>Smart Attendance. Smarter Decisions.</small>
+          </div>
         </div>
-      </div>
 
-      <div className="auth-right">
-        <div style={{maxWidth:420,margin:'0 auto'}}>
-          <h3>Student Sign in</h3>
-          <Card className="auth-card">
-            <form onSubmit={submit}>
-              <label className="form-row"><div>Roll Number or Email</div><input value={roll} onChange={e=>setRoll(e.target.value)} placeholder="BCA001 or you@school.edu" /></label>
-              <label className="form-row"><div>Password</div><input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Password" /></label>
+        <div className="ax-auth-copy">
+          <h1>Student Login</h1>
+          <p>Welcome back! Login to continue.</p>
+          <ul>
+            <li>Track your attendance progress</li>
+            <li>Use the attendance shortage calculator</li>
+            <li>Stay ahead with subject-wise insights</li>
+          </ul>
+        </div>
+      </section>
 
-              {error && <div className="error-msg">{error}</div>}
+      <section className="ax-auth-form-panel">
+        <div className="ax-auth-card">
+          <h2>Student Login</h2>
+          <p>Welcome back! Login to continue.</p>
 
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:12}}>
-                <a className="muted">Forgot password?</a>
-                <div>
-                  <Button type="submit">{loading? 'Signing in...' : 'Sign in'}</Button>
-                </div>
+          <form onSubmit={submit} className="ax-auth-form" noValidate>
+            <label>
+              <span>Email or Roll Number</span>
+              <input
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                placeholder="BCA001 or you@school.edu"
+                autoComplete="username"
+              />
+            </label>
+
+            <label>
+              <span>Password</span>
+              <div className="ax-password-row">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password"
+                  autoComplete="current-password"
+                />
+                <button type="button" className="ax-icon-btn" onClick={() => setShowPassword((v) => !v)}>
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
               </div>
-            </form>
-          </Card>
-          <div style={{marginTop:12}}><button className="btn btn-ghost" onClick={onBack}>Back to AttendX</button></div>
+            </label>
+
+            <div className="ax-form-options">
+              <label className="ax-remember">
+                <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+                Remember me
+              </label>
+              <button type="button" className="ax-link-btn">Forgot Password?</button>
+            </div>
+
+            {error && <div className="ax-form-error">{error}</div>}
+            {success && <div className="ax-form-success">{success}</div>}
+
+            <button type="submit" className="ax-primary-btn" disabled={loading}>
+              {loading ? 'Logging in...' : 'Login as Student'}
+            </button>
+
+            <button type="button" className="ax-secondary-btn">Create Student Account</button>
+            <button type="button" className="ax-back-btn" onClick={onBack}>Back to AttendX</button>
+          </form>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

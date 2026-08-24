@@ -2,7 +2,7 @@ import supabase from '../utils/supabase';
 import { loadStudents as loadStudentsLocal, saveStudents as saveStudentsLocal, loadAttendance as loadAttendanceLocal, saveAttendance as saveAttendanceLocal } from '../storage';
 
 function isSupabaseConfigured(){
-  try { return Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY); } catch(e){ return false; }
+  try { return Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY); } catch { return false; }
 }
 
 export async function fetchStudents(){
@@ -65,7 +65,7 @@ export async function upsertAttendanceRecordsForDate(date, records, markedBy=nul
     return rest;
   }
   const payload = records.map(r=>({ student_id: r.studentId, date, status: r.present ? 'present' : 'absent', marked_by: markedBy }));
-  const { data, error } = await supabase.from('attendance').upsert(payload, { onConflict: ['student_id','date'] });
+  const { error } = await supabase.from('attendance').upsert(payload, { onConflict: ['student_id','date'] });
   if(error) throw error;
   return data;
 }
