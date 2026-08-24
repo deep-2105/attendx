@@ -1,24 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { computeStudentOverall } from '../utils/attendance';
 
-const TREND = [
-  { date: 'Aug 1', pct: 58 },
-  { date: 'Aug 5', pct: 64 },
-  { date: 'Aug 8', pct: 69 },
-  { date: 'Aug 12', pct: 63 },
-  { date: 'Aug 16', pct: 74 },
-  { date: 'Aug 20', pct: 79 },
-  { date: 'Aug 24', pct: 87 },
-];
-
-const SUBJECTS = [
-  { name: 'Data Structures', pct: 92 },
-  { name: 'Database Systems', pct: 85 },
-  { name: 'Operating Systems', pct: 78 },
-  { name: 'Computer Networks', pct: 90 },
-  { name: 'Web Development', pct: 88 },
-];
-
 function classesToReachTarget(attended, total, targetPct) {
   const target = targetPct / 100;
   if (total <= 0) return 0;
@@ -74,18 +56,35 @@ export default function StudentDashboard({ students, attendance, onLogout, sessi
     return () => observer.disconnect();
   }, []);
 
+  const trendData = useMemo(() => {
+    if (!attendance || !studentId) return [];
+    const ordered = [...attendance]
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(-7);
+
+    return ordered.map((day) => {
+      const record = (day.records || []).find((r) => r.studentId === studentId);
+      const pct = record ? (record.present ? 100 : 0) : 0;
+      return {
+        date: day.date.slice(5).replace('-', '/'),
+        pct,
+      };
+    });
+  }, [attendance, studentId]);
+
   const points = useMemo(() => {
-    const minPct = 50;
-    const maxPct = 95;
+    if (!trendData.length) return [];
+    const minPct = 0;
+    const maxPct = 100;
     const usableW = 248;
     const usableH = 88;
-    return TREND.map((item, i) => {
-      const x = 12 + (i / (TREND.length - 1)) * usableW;
-      const normalized = (item.pct - minPct) / (maxPct - minPct);
+    return trendData.map((item, i) => {
+      const x = 12 + (i / Math.max(1, trendData.length - 1)) * usableW;
+      const normalized = (item.pct - minPct) / Math.max(1, maxPct - minPct);
       const y = 98 - normalized * usableH;
       return { ...item, x, y };
     });
-  }, []);
+  }, [trendData]);
 
   const fullPath = useMemo(
     () => points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' '),
@@ -188,62 +187,74 @@ export default function StudentDashboard({ students, attendance, onLogout, sessi
 
         <section className="ax-student-section">
           <div className="ax-section-head">
-            <h2>My Subjects</h2>
+            <h2>My Attendance Summary</h2>
             <button className="ax-link-btn">View All →</button>
           </div>
 
           <div className="ax-subject-grid">
-            {SUBJECTS.map((subject) => (
-              <article key={subject.name} className="ax-subject-card">
-                <h3>{subject.name}</h3>
-                <strong>{subject.pct}%</strong>
+            {stats ? (
+              <article className="ax-subject-card">
+                <h3>Overall Attendance</h3>
+                <strong>{stats.pct}%</strong>
                 <div className="ax-progress-track">
-                  <span style={{ width: `${subject.pct}%` }} />
+                  <span style={{ width: `${stats.pct}%` }} />
                 </div>
               </article>
-            ))}
+            ) : (
+              <div style={{ padding: 20, color: '#666' }}>No attendance data available yet.</div>
+            )}
           </div>
         </section>
 
         <section className="ax-student-lower-grid">
-          <article className="ax-card ax-trend-card" ref={chartRef}>
-            <div className="ax-section-head">
-              <h2>Attendance Trend</h2>
-              <span>This Month</span>
-            </div>
+          {points.length ? (
+            <article className="ax-card ax-trend-card" ref={chartRef}>
+              <div className="ax-section-head">
+                <h2>Attendance Trend</h2>
+                <span>This Month</span>
+              </div>
 
-            <div className="ax-trend-chart">
-              <svg viewBox="0 0 280 120" preserveAspectRatio="none">
-                <path className="ax-trend-base" d={fullPath} />
-                <path className="ax-trend-line" d={activePath || fullPath} />
-                {points.map((p, index) => (
-                  <circle
-                    key={p.date}
-                    cx={p.x}
-                    cy={p.y}
-                    r="4"
-                    className="ax-trend-point"
-                    style={{ opacity: index < visiblePoints ? 1 : 0 }}
-                    onMouseEnter={() => setHoveredPoint(index)}
-                    onMouseLeave={() => setHoveredPoint(null)}
-                  />
-                ))}
-              </svg>
+              <div className="ax-trend-chart">
+                <svg viewBox="0 0 280 120" preserveAspectRatio="none">
+                  <path className="ax-trend-base" d={fullPath} />
+                  <path className="ax-trend-line" d={activePath || fullPath} />
+                  {points.map((p, index) => (
+                    <circle
+                      key={p.date}
+                      cx={p.x}
+                      cy={p.y}
+                      r="4"
+                      className="ax-trend-point"
+                      style={{ opacity: index < visiblePoints ? 1 : 0 }}
+                      onMouseEnter={() => setHoveredPoint(index)}
+                      onMouseLeave={() => setHoveredPoint(null)}
+                    />
+                  ))}
+                </svg>
 
-              {hoveredPoint !== null && points[hoveredPoint] && (
-                <div
-                  className="ax-chart-tooltip"
-                  style={{
-                    left: `${(points[hoveredPoint].x / 280) * 100}%`,
-                    top: `${(points[hoveredPoint].y / 120) * 100}%`,
-                  }}
-                >
-                  <strong>{points[hoveredPoint].date}</strong>
-                  <span>{points[hoveredPoint].pct}%</span>
-                </div>
-              )}
-            </div>
-          </article>
+                {hoveredPoint !== null && points[hoveredPoint] && (
+                  <div
+                    className="ax-chart-tooltip"
+                    style={{
+                      left: `${(points[hoveredPoint].x / 280) * 100}%`,
+                      top: `${(points[hoveredPoint].y / 120) * 100}%`,
+                    }}
+                  >
+                    <strong>{points[hoveredPoint].date}</strong>
+                    <span>{points[hoveredPoint].pct}%</span>
+                  </div>
+                )}
+              </div>
+            </article>
+          ) : (
+            <article className="ax-card ax-trend-card" ref={chartRef}>
+              <div className="ax-section-head">
+                <h2>Attendance Trend</h2>
+                <span>Waiting for data</span>
+              </div>
+              <div style={{ padding: 24, color: '#666' }}>No attendance history yet for this student.</div>
+            </article>
+          )}
 
           <article className="ax-card ax-bunk-card">
             <h2>Can I Bunk?</h2>

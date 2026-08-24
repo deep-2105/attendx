@@ -67,7 +67,7 @@ export async function upsertAttendanceRecordsForDate(date, records, markedBy=nul
   const payload = records.map(r=>({ student_id: r.studentId, date, status: r.present ? 'present' : 'absent', marked_by: markedBy }));
   const { error } = await supabase.from('attendance').upsert(payload, { onConflict: ['student_id','date'] });
   if(error) throw error;
-  return data;
+  return payload;
 }
 
 export async function upsertSingleAttendance(studentId, date, present, markedBy=null){
