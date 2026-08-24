@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { formatDate } from "../storage";
 import { useToast } from "../components/Toast";
 import { computeStudentOverall } from "../utils/attendance";
@@ -7,7 +7,7 @@ export default function AttendancePage({ students, attendance, setAttendance }) 
   const [date, setDate] = useState(formatDate());
   const toast = useToast();
 
-  const dayRecord = attendance.find((d) => d.date === date) || { date, records: [] };
+  const dayRecord = useMemo(() => attendance.find((d) => d.date === date) || { date, records: [] }, [attendance, date]);
 
   const getPresent = (id) => !!dayRecord.records.find((r) => r.studentId === id && r.present);
 
@@ -24,7 +24,7 @@ export default function AttendancePage({ students, attendance, setAttendance }) 
     else rec.records.push({ studentId: id, present: true });
     setAttendance(newAttendance);
     const after = computeStudentOverall(id, students, newAttendance);
-    try { toast.show(after.pct >= before.pct ? 'Attendance secured.' : 'Attendance updated.'); } catch(e){}
+    toast.show(after.pct >= before.pct ? 'Attendance secured.' : 'Attendance updated.');
   };
 
   const markAll = (present) => {
@@ -36,7 +36,7 @@ export default function AttendancePage({ students, attendance, setAttendance }) 
     }
     rec.records = students.map((s) => ({ studentId: s.id, present }));
     setAttendance(newAttendance);
-    try { toast.show(present ? 'Marked all present.' : 'Marked all absent.'); } catch(e){}
+    toast.show(present ? 'Marked all present.' : 'Marked all absent.');
   };
 
   const summary = useMemo(() => {
@@ -163,7 +163,7 @@ export default function AttendancePage({ students, attendance, setAttendance }) 
         </div>
       </section>
 
-      <footer>
+      <footer className="dashboard-footer">
         <span>AttendX</span>
         <span>Smart Attendance Management System</span>
       </footer>

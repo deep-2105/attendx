@@ -1,44 +1,49 @@
-import React from 'react';
 
 export default function Footer(){
   return (
-    <footer className="site-footer">
-      <div className="footer-inner container">
-        <div className="col">
-          <div className="brand">AttendX</div>
-          <div className="muted">Smart Attendance. Smarter Decisions.</div>
+    <footer className="lp-footer">
+      <div className="lp-container lp-footer-grid">
+        <div className="lp-footer-col">
+          <h3>AttendX</h3>
+          <p>Smart Attendance. Smarter Decisions.</p>
         </div>
 
-        <div className="col">
+        <div className="lp-footer-col">
           <h4>Product</h4>
-          <nav className="footer-links">
+          <nav className="lp-footer-links">
             <a>Features</a>
             <a>How it works</a>
             <a>Analytics</a>
           </nav>
         </div>
 
-        <div className="col">
+        <div className="lp-footer-col">
           <h4>Company</h4>
-          <nav className="footer-links">
+          <nav className="lp-footer-links">
             <a>About</a>
             <a>Contact</a>
           </nav>
         </div>
 
-        <div className="col">
+        <div className="lp-footer-col">
           <h4>For</h4>
-          <nav className="footer-links">
+          <nav className="lp-footer-links">
             <a>Students</a>
             <a>Professors</a>
           </nav>
         </div>
-      </div>
-      <div className="container" style={{borderTop:'1px solid rgba(255,255,255,0.02)',paddingTop:16,marginTop:18}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-          <div className="muted">© {new Date().getFullYear()} AttendX. All rights reserved.</div>
-          <div className="muted">Privacy · Terms</div>
+
+        <div className="lp-footer-col">
+          <h4>Legal</h4>
+          <nav className="lp-footer-links">
+            <a>Privacy</a>
+            <a>Terms</a>
+          </nav>
         </div>
+      </div>
+
+      <div className="lp-container lp-footer-bottom">
+        <small>© 2026 AttendX. All rights reserved.</small>
       </div>
     </footer>
   );

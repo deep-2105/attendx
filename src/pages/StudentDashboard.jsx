@@ -1,118 +1,304 @@
-import React, { useMemo } from 'react';
-import { computeStudentOverall, computeStreak, attendanceStatusFromPct } from '../utils/attendance';
-import AttendanceStatus from '../components/AttendanceStatus';
-import StudentTopNav from '../components/StudentTopNav';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { computeStudentOverall } from '../utils/attendance';
 
-export default function StudentDashboard({ students, attendance, onLogout, session }){
+const TREND = [
+  { date: 'Aug 1', pct: 58 },
+  { date: 'Aug 5', pct: 64 },
+  { date: 'Aug 8', pct: 69 },
+  { date: 'Aug 12', pct: 63 },
+  { date: 'Aug 16', pct: 74 },
+  { date: 'Aug 20', pct: 79 },
+  { date: 'Aug 24', pct: 87 },
+];
+
+const SUBJECTS = [
+  { name: 'Data Structures', pct: 92 },
+  { name: 'Database Systems', pct: 85 },
+  { name: 'Operating Systems', pct: 78 },
+  { name: 'Computer Networks', pct: 90 },
+  { name: 'Web Development', pct: 88 },
+];
+
+function classesToReachTarget(attended, total, targetPct) {
+  const target = targetPct / 100;
+  if (total <= 0) return 0;
+  if (attended / total >= target) return 0;
+  return Math.ceil((target * total - attended) / (1 - target));
+}
+
+function classesCanMiss(attended, total, targetPct) {
+  const target = targetPct / 100;
+  if (total <= 0 || attended / total < target) return 0;
+  return Math.max(0, Math.floor(attended / target - total));
+}
+
+export default function StudentDashboard({ students, attendance, onLogout, session }) {
   const studentId = session?.profile?.id;
-  const student = students.find(s=>s.id === studentId) || { name: 'Student' };
+  const student = students.find((s) => s.id === studentId) || { name: 'Student', roll: 'N/A' };
+  const stats = useMemo(
+    () => (studentId ? computeStudentOverall(studentId, students, attendance) : null),
+    [studentId, students, attendance]
+  );
 
-  const stats = useMemo(()=> studentId ? computeStudentOverall(studentId, students, attendance) : null, [studentId, students, attendance]);
-  const streak = useMemo(()=> studentId ? computeStreak(studentId, attendance) : 0, [studentId, attendance]);
+  const [targetPct, setTargetPct] = useState(75);
+  const [hoveredPoint, setHoveredPoint] = useState(null);
+  const [progress, setProgress] = useState(0);
+  const chartRef = useRef(null);
 
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  useEffect(() => {
+    const node = chartRef.current;
+    if (!node) return undefined;
 
-  const heroMessage = (()=>{
-    if(!stats) return 'Your attendance story continues...';
-    const pct = stats.pct;
-    if(pct >= 90) return "You're safe. Keep the streak alive.";
-    if(pct >= 75) return "You're doing well. Don't lose the momentum.";
-    if(pct >= 60) return "Careful. One more absence could hurt.";
-    if(pct >= 50) return "You're in the danger zone.";
-    return "This is getting serious.";
-  })();
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        const start = performance.now();
+        const duration = 1100;
+        let frame = 0;
+
+        const tick = (now) => {
+          const t = Math.min((now - start) / duration, 1);
+          const eased = 1 - Math.pow(1 - t, 3);
+          setProgress(eased);
+          if (t < 1) frame = requestAnimationFrame(tick);
+        };
+
+        frame = requestAnimationFrame(tick);
+        observer.disconnect();
+        return () => cancelAnimationFrame(frame);
+      },
+      { threshold: 0.35 }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  const points = useMemo(() => {
+    const minPct = 50;
+    const maxPct = 95;
+    const usableW = 248;
+    const usableH = 88;
+    return TREND.map((item, i) => {
+      const x = 12 + (i / (TREND.length - 1)) * usableW;
+      const normalized = (item.pct - minPct) / (maxPct - minPct);
+      const y = 98 - normalized * usableH;
+      return { ...item, x, y };
+    });
+  }, []);
+
+  const fullPath = useMemo(
+    () => points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' '),
+    [points]
+  );
+
+  const visiblePoints = Math.max(1, Math.floor(progress * points.length));
+  const activePath = points
+    .slice(0, visiblePoints)
+    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`)
+    .join(' ');
+
+  const ringPct = stats?.pct ?? 87;
+  const currentAttended = stats?.present ?? 36;
+  const currentConducted = stats?.totalDays ?? 50;
+  const needToTarget = classesToReachTarget(currentAttended, currentConducted, targetPct);
+  const canMiss = classesCanMiss(currentAttended, currentConducted, targetPct);
+
+  const shortageMessage =
+    needToTarget > 0
+      ? `You need to attend the next ${needToTarget} classes consecutively to reach ${targetPct}%.`
+      : `You can miss ${canMiss} more classes while staying above ${targetPct}%.`;
+
+  const recentActivity = useMemo(() => {
+    if (!attendance || attendance.length === 0 || !studentId) {
+      return [
+        { label: 'Attendance marked for Data Structures', time: 'Today, 10:24 AM' },
+        { label: 'Performance updated', time: 'Yesterday, 6:17 PM' },
+      ];
+    }
+
+    const days = [...attendance].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 2);
+    return days.map((day, idx) => {
+      const rec = (day.records || []).find((r) => r.studentId === studentId);
+      return {
+        label: rec?.present ? 'Attendance marked for your classes' : 'Attendance status updated',
+        time: idx === 0 ? `Today, ${day.date}` : `Recently, ${day.date}`,
+      };
+    });
+  }, [attendance, studentId]);
 
   return (
-    <div className="student-portal">
-      <StudentTopNav name={student.name} />
-      <div className="topbar">
-        <div>
-          <div className="eyebrow">Student Portal</div>
-          <h1>{greeting}, {student.name}.</h1>
-          <p className="subtitle">{heroMessage}</p>
-        </div>
-        <div className="date-box">
-          <div style={{display:'flex',gap:8,alignItems:'center'}}>
-            <strong>{student.roll || ''}</strong>
-          </div>
-          <div style={{marginTop:8}}>
-            <button onClick={onLogout} style={{border:0,background:'#f3f4f6',padding:'8px 10px',borderRadius:8}}>Logout</button>
+    <div className="ax-student-page ax-page-enter">
+      <aside className="ax-student-sidebar">
+        <div className="ax-brand">
+          <span className="ax-brand-mark">A</span>
+          <div>
+            <strong>AttendX</strong>
+            <small>Smart Attendance. Smarter Decisions.</small>
           </div>
         </div>
-      </div>
 
-      <div style={{display:'grid',gridTemplateColumns:'1fr 360px',gap:18}}>
-        <div>
-          <div className="content-card" style={{padding:22}}>
-            <h3 style={{marginTop:0}}>Your attendance</h3>
-            {stats ? (
-              <div style={{display:'flex',alignItems:'center',gap:20}}>
-                <div style={{width:220,height:220,display:'grid',placeItems:'center',borderRadius:18,background:'linear-gradient(135deg,#0f1724 0%, rgba(105,88,220,0.08) 100%)',boxShadow:'0 20px 60px rgba(10,8,20,0.45)'}}>
-                  <div style={{textAlign:'center',color:'#fff'}}>
-                    <div style={{fontSize:56,fontWeight:800,letterSpacing:-1}}>{stats.pct}%</div>
-                    <div style={{marginTop:10}}><AttendanceStatus pct={stats.pct} /></div>
-                  </div>
-                </div>
+        <nav className="ax-student-nav">
+          <button className="active">Dashboard</button>
+          <button>Subjects</button>
+          <button>Attendance</button>
+          <button>Analytics</button>
+          <button>Profile</button>
+        </nav>
 
-                <div style={{flex:1}}>
-                  <div>Present: <strong>{stats.present}</strong></div>
-                  <div>Absent: <strong>{stats.absent}</strong></div>
-                  <div>Total classes: <strong>{stats.totalDays}</strong></div>
-                  <div style={{marginTop:12,color:'#e6e9f2'}}>
-                    {stats.pct >= 90 ? (
-                      <div style={{color:'#c7f3d6'}}>You're in excellent shape. Keep going.</div>
-                    ) : stats.pct >= 75 ? (
-                      <div style={{color:'#dbeafe'}}>You're secure. Maintain the rhythm.</div>
-                    ) : stats.pct >= 60 ? (
-                      <div style={{color:'#fef3c7'}}>Careful — prioritize next classes.</div>
-                    ) : (
-                      <div style={{color:'#fee2e2'}}>Immediate action required. Reach out for help.</div>
-                    )}
-                  </div>
-                  <div style={{marginTop:12,color:'#ffd6a5'}}>{streak>0 ? `🔥 ${streak} class attendance streak` : 'Your streak starts today.'}</div>
-                </div>
+        <div className="ax-student-sidebar-foot">
+          <button className="ax-ghost-btn" onClick={onLogout}>Logout</button>
+        </div>
+      </aside>
+
+      <div className="ax-student-main">
+        <header className="ax-student-topbar">
+          <div className="ax-brand compact">
+            <span className="ax-brand-mark">A</span>
+            <div>
+              <strong>AttendX</strong>
+              <small>Smart Attendance. Smarter Decisions.</small>
+            </div>
+          </div>
+
+          <div className="ax-student-top-actions">
+            <button className="ax-icon-btn" aria-label="Notifications">🔔</button>
+            <div className="ax-user-chip">
+              <span>{student.name?.charAt(0) || 'S'}</span>
+            </div>
+          </div>
+        </header>
+
+        <section className="ax-student-hero-grid">
+          <article className="ax-student-greeting">
+            <h1>Welcome back, Student 👋</h1>
+            <p>Make the most of your learning journey.</p>
+          </article>
+
+          <article className="ax-attendance-ring-card">
+            <p>Overall Attendance</p>
+            <div className="ax-ring" style={{ '--pct': `${ringPct}%` }}>
+              <div>
+                <strong>{ringPct}%</strong>
+                <span>Attendance</span>
               </div>
-            ) : (
-              <div className="empty"><h3>No attendance history</h3><p>Attend classes to build your attendance history.</p></div>
-            )}
+            </div>
+          </article>
+        </section>
+
+        <section className="ax-student-section">
+          <div className="ax-section-head">
+            <h2>My Subjects</h2>
+            <button className="ax-link-btn">View All →</button>
           </div>
 
-          <div style={{marginTop:14}} className="content-card">
-            <div className="section-header"><h2>Can I Bunk?</h2><p>Let's check before you make a questionable decision.</p></div>
-            <div style={{padding:18}}>
-              {stats ? (
-                <div>
-                  <p style={{margin:0}}>Current attendance: <strong>{stats.pct}%</strong> — Present: <strong>{stats.present}</strong> / <strong>{stats.totalDays}</strong></p>
-                  <div style={{marginTop:12}}>
-                    {stats.pct >= 75 ? (
-                      <div>You can miss <strong>{stats.canMiss}</strong> more class(es) and remain at 75%.</div>
-                    ) : (
-                      <div>Don't risk another absence. You need <strong>{stats.need}</strong> consecutive present class(es) to reach 75%.</div>
-                    )}
-                  </div>
+          <div className="ax-subject-grid">
+            {SUBJECTS.map((subject) => (
+              <article key={subject.name} className="ax-subject-card">
+                <h3>{subject.name}</h3>
+                <strong>{subject.pct}%</strong>
+                <div className="ax-progress-track">
+                  <span style={{ width: `${subject.pct}%` }} />
                 </div>
-              ) : (
-                <div style={{padding:12}}>Insufficient data to evaluate.</div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="ax-student-lower-grid">
+          <article className="ax-card ax-trend-card" ref={chartRef}>
+            <div className="ax-section-head">
+              <h2>Attendance Trend</h2>
+              <span>This Month</span>
+            </div>
+
+            <div className="ax-trend-chart">
+              <svg viewBox="0 0 280 120" preserveAspectRatio="none">
+                <path className="ax-trend-base" d={fullPath} />
+                <path className="ax-trend-line" d={activePath || fullPath} />
+                {points.map((p, index) => (
+                  <circle
+                    key={p.date}
+                    cx={p.x}
+                    cy={p.y}
+                    r="4"
+                    className="ax-trend-point"
+                    style={{ opacity: index < visiblePoints ? 1 : 0 }}
+                    onMouseEnter={() => setHoveredPoint(index)}
+                    onMouseLeave={() => setHoveredPoint(null)}
+                  />
+                ))}
+              </svg>
+
+              {hoveredPoint !== null && points[hoveredPoint] && (
+                <div
+                  className="ax-chart-tooltip"
+                  style={{
+                    left: `${(points[hoveredPoint].x / 280) * 100}%`,
+                    top: `${(points[hoveredPoint].y / 120) * 100}%`,
+                  }}
+                >
+                  <strong>{points[hoveredPoint].date}</strong>
+                  <span>{points[hoveredPoint].pct}%</span>
+                </div>
               )}
             </div>
-          </div>
-        </div>
+          </article>
 
-        <div>
-          <div className="content-card" style={{padding:18}}>
-            <h3 style={{marginTop:0}}>Quick stats</h3>
-            <div style={{marginTop:8}}>
-              <div>Attendance status: <strong>{stats ? attendanceStatusFromPct(stats.pct) : '—'}</strong></div>
-              <div style={{marginTop:8}}>Last recorded streak: <strong>{streak}</strong></div>
+          <article className="ax-card ax-bunk-card">
+            <h2>Can I Bunk?</h2>
+            <p>{needToTarget > 0 ? `Current Attendance: ${ringPct}%` : `Current Attendance: ${ringPct}%`}</p>
+            <strong>{needToTarget > 0 ? `Need ${needToTarget} classes` : `You can bunk ${canMiss} classes today.`}</strong>
+
+            <div className="ax-calc-grid">
+              <label>
+                <span>Target %</span>
+                <input
+                  type="number"
+                  min="50"
+                  max="95"
+                  value={targetPct}
+                  onChange={(e) => setTargetPct(Math.max(50, Math.min(95, Number(e.target.value) || 75)))}
+                />
+              </label>
+              <label>
+                <span>Attended</span>
+                <input type="number" value={currentAttended} readOnly />
+              </label>
+              <label>
+                <span>Conducted</span>
+                <input type="number" value={currentConducted} readOnly />
+              </label>
             </div>
-          </div>
 
-          <div style={{marginTop:12}} className="content-card" style={{padding:18}}>
-            <h3 style={{marginTop:0}}>My Analytics</h3>
-            <div style={{marginTop:8,color:'#666'}}>Attendance trend and personal analytics appear here. Subject breakdown isn't available in this demo.</div>
+            <div className="ax-calc-result">{shortageMessage}</div>
+          </article>
+        </section>
+
+        <section className="ax-card ax-activity-card">
+          <div className="ax-section-head">
+            <h2>Recent Activity</h2>
+            <button className="ax-link-btn">View All →</button>
           </div>
-        </div>
+          <div className="ax-activity-list">
+            {recentActivity.map((item) => (
+              <div key={`${item.label}-${item.time}`} className="ax-activity-item">
+                <div className="ax-activity-dot" />
+                <div>
+                  <strong>{item.label}</strong>
+                  <span>{item.time}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <nav className="ax-student-bottom-nav" aria-label="Student mobile navigation">
+          <button className="active">Dashboard</button>
+          <button>Subjects</button>
+          <button>Attendance</button>
+          <button>Profile</button>
+        </nav>
       </div>
     </div>
   );

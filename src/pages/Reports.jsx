@@ -1,7 +1,6 @@
-import React, { useMemo, useState, useRef } from "react";
+import { useMemo, useState } from "react";
 import { filterAttendanceByRange, attendanceTrend, presentAbsentTotals, studentStats, bestAndWorst, atRiskStudents, dateRangeForFilter } from "../utils/stats";
 import { formatDate } from "../storage";
-import AttendanceStatus from "../components/AttendanceStatus";
 
 function TinyLineChart({points}){
   if(!points || points.length < 2) return (

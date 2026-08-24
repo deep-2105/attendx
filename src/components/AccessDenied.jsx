@@ -1,16 +1,15 @@
-import React from 'react';
 import auth from '../auth';
 
 export default function AccessDenied({ reason }){
   const handleSignOut = async ()=>{
-    try{ await auth.signOut(); window.location.reload(); }catch(e){ window.location.href = '/'; }
+    try{ await auth.signOut(); window.location.reload(); }catch{ window.location.href = '/'; }
   };
 
   const title = reason === 'not-authenticated' ? 'Not signed in' : reason === 'no-profile' ? 'Profile missing' : 'Access denied';
   const message = reason === 'not-authenticated'
     ? 'You must sign in to access this area.'
     : reason === 'no-profile'
-    ? 'Your account does not have a configured profile. Contact your administrator.'
+    ? 'Your account is authenticated, but your AttendX profile could not be found.'
     : 'You do not have permission to view this page.';
 
   return (

@@ -1,4 +1,3 @@
-import React from 'react';
 import { attendanceStatusFromPct } from '../utils/attendance';
 
 export default function AttendanceStatus({ pct }){

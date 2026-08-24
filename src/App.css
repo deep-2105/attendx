@@ -156,7 +156,7 @@ button {
 .cc-strong.safe { color:#8ee6a3 }
 .cc-strong.danger { color:#ffb4b4 }
 
-nav {
+.sidebar nav {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -229,14 +229,14 @@ nav {
 .main {
   margin-left: 0;
   width: 100%;
-  padding: 40px 48px;
-  padding-top: 96px; /* space for sticky navbar */
+  padding: 0;
 }
 
 /* when sidebar is present (professor view), push main content */
 .app.with-sidebar .main {
   margin-left: 250px;
   width: calc(100% - 250px);
+  padding: 40px 48px;
 }
 
 .topbar {
@@ -245,7 +245,7 @@ nav {
   align-items: flex-start;
   margin-bottom: 30px;
 }
-
+ .dashboard-footer {
 .eyebrow {
   margin: 0 0 8px;
   font-size: 11px;
@@ -253,7 +253,7 @@ nav {
   letter-spacing: 1.5px;
   color: #7466df;
 }
-
+ .dashboard-footer span:first-child {
 h1 {
   margin: 0;
   font-size: 32px;
@@ -580,7 +580,7 @@ td {
 
 /* FOOTER */
 
-footer {
+.dashboard-footer {
   padding: 25px 5px;
   display: flex;
   justify-content: space-between;
@@ -588,7 +588,7 @@ footer {
   font-size: 11px;
 }
 
-footer span:first-child {
+.dashboard-footer span:first-child {
   color: #6958dc;
   font-weight: 700;
 }
@@ -604,7 +604,7 @@ footer span:first-child {
     width: 210px;
   }
 
-  .main {
+  .app.with-sidebar .main {
     margin-left: 210px;
     width: calc(100% - 210px);
     padding: 30px;
@@ -619,8 +619,7 @@ footer span:first-child {
   .main {
     margin-left: 0;
     width: 100%;
-    padding: 18px;
-    padding-top: 84px;
+    padding: 0;
   }
 
   .topbar {

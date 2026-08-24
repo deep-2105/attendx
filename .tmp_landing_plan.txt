@@ -1,0 +1,8 @@
+Landing polish tasks:
+1) Refine navbar/hero/stats spacing and typography to match reference.
+2) Implement animated trend line with point hover tooltips.
+3) Implement animated donut chart with count-up + hover legend feedback.
+4) Reduce background text noise and improve atmospheric layers.
+5) Tighten Why + How sections to reference proportions and timeline style.
+6) Verify responsiveness on 1440/1280/1024/768/430/390.
+7) Run lint + build.
