@@ -138,7 +138,27 @@ export default function Dashboard({ students, attendance, goTo }) {
           <h1>Welcome back, Professor 👋</h1>
           <p>Manage your classroom with confidence.</p>
         </div>
-        <div className="ax-date-pill">{today}</div>
+        <div className="ax-prof-head-right">
+          <div className="ax-prof-view-toggle" role="tablist" aria-label="Dashboard role view">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={true}
+              className="active"
+            >
+              Professor View
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={false}
+              onClick={() => goTo && goTo('student-dashboard')}
+            >
+              Student View
+            </button>
+          </div>
+          <div className="ax-date-pill">{today}</div>
+        </div>
       </header>
 
       <section className="ax-prof-kpis">
