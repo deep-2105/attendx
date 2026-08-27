@@ -245,15 +245,14 @@ button {
   align-items: flex-start;
   margin-bottom: 30px;
 }
- .dashboard-footer {
-.eyebrow {
+ .eyebrow {
   margin: 0 0 8px;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 1.5px;
   color: #7466df;
 }
- .dashboard-footer span:first-child {
+
 h1 {
   margin: 0;
   font-size: 32px;

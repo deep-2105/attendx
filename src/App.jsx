@@ -16,7 +16,14 @@ import RoleSelection from "./pages/RoleSelection";
 import ProfessorLogin from "./pages/ProfessorLogin";
 import StudentLogin from "./pages/StudentLogin";
 import StudentDashboard from "./pages/StudentDashboard";
-import RequireRole from './components/RequireRole';
+import ProfessorAnalytics from "./pages/ProfessorAnalytics";
+import ProfessorSettings from "./pages/ProfessorSettings";
+import RequireRole, {
+  AUTH_LOADING,
+  UNAUTHENTICATED,
+  AUTHENTICATED_ROLE_LOADING,
+  AUTHENTICATED_ROLE_RESOLVED,
+} from './components/RequireRole';
 import AccessDenied from './components/AccessDenied';
 import auth from "./auth";
 import supabase from './utils/supabase';
@@ -27,20 +34,32 @@ const ACTIVE_TO_PATH = {
   'student-login': '/student/login',
   'professor-login': '/professor/login',
   'student-dashboard': '/student/dashboard',
+  'student-subjects': '/student/subjects',
+  'student-attendance': '/student/attendance',
+  'student-analytics': '/student/analytics',
+  'student-profile': '/student/profile',
   dashboard: '/professor/dashboard',
   students: '/professor/students',
   attendance: '/professor/attendance',
   reports: '/professor/reports',
+  analytics: '/professor/analytics',
+  settings: '/professor/settings',
 };
 
 function activeFromPath(pathname) {
   if (pathname === '/student/login') return 'student-login';
   if (pathname === '/professor/login') return 'professor-login';
   if (pathname === '/student/dashboard') return 'student-dashboard';
+  if (pathname === '/student/subjects') return 'student-subjects';
+  if (pathname === '/student/attendance') return 'student-attendance';
+  if (pathname === '/student/analytics') return 'student-analytics';
+  if (pathname === '/student/profile') return 'student-profile';
   if (pathname === '/professor/dashboard') return 'dashboard';
   if (pathname === '/professor/students') return 'students';
   if (pathname === '/professor/attendance') return 'attendance';
   if (pathname === '/professor/reports') return 'reports';
+  if (pathname === '/professor/analytics') return 'analytics';
+  if (pathname === '/professor/settings') return 'settings';
   if (pathname === '/role-select') return 'role-select';
   return 'landing';
 }
@@ -54,6 +73,10 @@ function App() {
   const [students, setStudents] = useState(() => loadStudents());
   const [attendance, setAttendance] = useState(() => loadAttendance());
   const [session, setSession] = useState(null);
+  const [authState, setAuthState] = useState(AUTH_LOADING);
+
+  const authLoading = authState === AUTH_LOADING;
+  const roleLoading = authState === AUTHENTICATED_ROLE_LOADING;
 
   useEffect(() => {
     saveStudents(students);
@@ -128,28 +151,128 @@ function App() {
   };
 
   function handleLogin(newSession) {
+    if (!newSession || !newSession.profile) {
+      setSession(null);
+      setAuthState(UNAUTHENTICATED);
+      return;
+    }
+
     setSession(newSession);
-    navigate(newSession.profile && newSession.profile.role === 'professor' ? 'dashboard' : 'student-dashboard');
+    setAuthState(AUTHENTICATED_ROLE_RESOLVED);
+    navigate(newSession.profile.role === 'professor' ? 'dashboard' : 'student-dashboard');
   }
 
   function handleLogout() {
     auth.signOut();
     setSession(null);
+    setAuthState(UNAUTHENTICATED);
     navigate('landing');
   }
 
-  // initialize session from Supabase
-  useEffect(()=>{
+  useEffect(() => {
     let mounted = true;
-    (async ()=>{
-      try{
-        const s = await auth.getCurrentSession();
-        if(!mounted) return;
-        if(s){ setSession(s); navigate(s.profile?.role === 'professor' ? 'dashboard' : 'student-dashboard'); }
-      }catch(e){ console.warn('failed to init session', e); }
-    })();
-    return ()=>{ mounted=false; };
-  },[]);
+
+    const hydrateSession = async () => {
+      setAuthState(AUTH_LOADING);
+      try {
+        const restoredSession = await auth.getCurrentSession();
+        if (!mounted) return;
+
+        if (!restoredSession) {
+          setSession(null);
+          setAuthState(UNAUTHENTICATED);
+          return;
+        }
+
+        setSession(restoredSession);
+        setAuthState(restoredSession.profile ? AUTHENTICATED_ROLE_RESOLVED : AUTHENTICATED_ROLE_LOADING);
+
+        if (restoredSession.profile) {
+          const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+          const currentActive = activeFromPath(currentPath);
+          const professorRoutes = ['dashboard', 'students', 'attendance', 'reports', 'analytics', 'settings'];
+          const studentRoutesList = ['student-dashboard', 'student-subjects', 'student-attendance', 'student-analytics', 'student-profile'];
+          const validRoutes = restoredSession.profile.role === 'professor' ? professorRoutes : studentRoutesList;
+
+          if (!validRoutes.includes(currentActive)) {
+            navigate(restoredSession.profile.role === 'professor' ? 'dashboard' : 'student-dashboard');
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          setSession(null);
+          setAuthState(UNAUTHENTICATED);
+        }
+        console.warn('failed to init session', e);
+      }
+    };
+
+    hydrateSession();
+
+    const { data: listener } = supabase.auth.onAuthStateChange(async (event, supabaseSession) => {
+      if (!mounted) return;
+
+      if (!supabaseSession) {
+        setSession(null);
+        setAuthState(UNAUTHENTICATED);
+        return;
+      }
+
+      setAuthState(AUTHENTICATED_ROLE_LOADING);
+
+      try {
+        const nextSession = await auth.getCurrentSession();
+        if (!mounted) return;
+
+        if (!nextSession) {
+          setSession(null);
+          setAuthState(UNAUTHENTICATED);
+          return;
+        }
+
+        setSession(nextSession);
+        setAuthState(nextSession.profile ? AUTHENTICATED_ROLE_RESOLVED : AUTHENTICATED_ROLE_LOADING);
+
+        if (nextSession?.profile) {
+          const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+          const currentActive = activeFromPath(currentPath);
+          const professorRoutes = ['dashboard', 'students', 'attendance', 'reports', 'analytics', 'settings'];
+          const studentRoutesList = ['student-dashboard', 'student-subjects', 'student-attendance', 'student-analytics', 'student-profile'];
+          const validRoutes = nextSession.profile.role === 'professor' ? professorRoutes : studentRoutesList;
+
+          if (!validRoutes.includes(currentActive)) {
+            navigate(nextSession.profile.role === 'professor' ? 'dashboard' : 'student-dashboard');
+          }
+        }
+      } catch (e) {
+        if (!mounted) return;
+        setSession(null);
+        setAuthState(UNAUTHENTICATED);
+        console.warn('failed to resolve auth state', e);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      listener?.subscription?.unsubscribe?.();
+    };
+  }, []);
+
+  const sessionRole = session?.profile?.role;
+  const authRoutes = ['landing', 'role-select', 'student-login', 'professor-login'];
+  const studentRoutes = ['student-dashboard', 'student-subjects', 'student-attendance', 'student-analytics', 'student-profile'];
+  const allowedSessionRoutes = sessionRole === 'professor'
+    ? ['dashboard', 'students', 'attendance', 'reports', 'analytics', 'settings']
+    : sessionRole === 'student'
+      ? studentRoutes
+      : [];
+
+  const shouldShowAccessDenied =
+    !!session &&
+    !!session.profile &&
+    authState === AUTHENTICATED_ROLE_RESOLVED &&
+    !authRoutes.includes(active) &&
+    !allowedSessionRoutes.includes(active);
 
   const professorSidebar = session && session.profile?.role === 'professor' ? (
     <aside className="ax-prof-sidebar">
@@ -161,64 +284,76 @@ function App() {
         </div>
       </div>
 
-      <nav className="ax-prof-nav">
-        <button className={`ax-prof-nav-item ${active === "dashboard" ? "active" : ""}`} onClick={() => navigate("dashboard")}>
-          <span>▦</span>
-          Dashboard
+      <nav className="ax-prof-nav" aria-label="Professor navigation">
+        <button
+          type="button"
+          className={`ax-prof-nav-item ${active === "dashboard" ? "active" : ""}`}
+          onClick={() => navigate("dashboard")}
+        >
+          <span className="ax-nav-icon">▦</span>
+          <span>Dashboard</span>
         </button>
 
-        <button className={`ax-prof-nav-item ${active === "students" ? "active" : ""}`} onClick={() => navigate("students")}>
-          <span>◉</span>
-          Students
+        <button
+          type="button"
+          className={`ax-prof-nav-item ${active === "students" ? "active" : ""}`}
+          onClick={() => navigate("students")}
+        >
+          <span className="ax-nav-icon">◉</span>
+          <span>Students</span>
         </button>
 
-        <button className={`ax-prof-nav-item ${active === "attendance" ? "active" : ""}`} onClick={() => navigate("attendance")}>
-          <span>✓</span>
-          Attendance
+        <button
+          type="button"
+          className={`ax-prof-nav-item ${active === "attendance" ? "active" : ""}`}
+          onClick={() => navigate("attendance")}
+        >
+          <span className="ax-nav-icon">✓</span>
+          <span>Attendance</span>
         </button>
 
-        <button className={`ax-prof-nav-item ${active === "reports" ? "active" : ""}`} onClick={() => navigate("reports")}>
-          <span>▤</span>
-          Reports
+        <button
+          type="button"
+          className={`ax-prof-nav-item ${active === "reports" ? "active" : ""}`}
+          onClick={() => navigate("reports")}
+        >
+          <span className="ax-nav-icon">▤</span>
+          <span>Reports</span>
         </button>
 
-        <span className="ax-prof-nav-item muted"><span>◌</span>Analytics</span>
-        <span className="ax-prof-nav-item muted"><span>⚙</span>Settings</span>
+        <button
+          type="button"
+          className={`ax-prof-nav-item ${active === "analytics" ? "active" : ""}`}
+          onClick={() => navigate("analytics")}
+        >
+          <span className="ax-nav-icon">◌</span>
+          <span>Analytics</span>
+        </button>
+
+        <button
+          type="button"
+          className={`ax-prof-nav-item ${active === "settings" ? "active" : ""}`}
+          onClick={() => navigate("settings")}
+        >
+          <span className="ax-nav-icon">⚙</span>
+          <span>Settings</span>
+        </button>
       </nav>
 
       <div className="ax-prof-sidebar-bottom">
         <div className="ax-prof-profile">
           <div className="ax-prof-avatar">PF</div>
           <div>
-            <strong>{session.email || 'Professor'}</strong>
-            <small>Computer Science</small>
+            <strong>{session.profile?.full_name || session.profile?.name || session.email || 'Professor'}</strong>
+            <small>{session.profile?.department || 'Computer Science'}</small>
           </div>
         </div>
         <div className="ax-prof-logout-wrap">
-          <button className="ax-prof-logout" onClick={handleLogout}>Logout</button>
+          <button type="button" className="ax-prof-logout" onClick={handleLogout}>Logout</button>
         </div>
       </div>
     </aside>
   ) : null;
-
-  useEffect(()=>{
-    // initialize session from Supabase if present
-    let mounted = true;
-    (async ()=>{
-      const s = await auth.getCurrentSession();
-      if(mounted && s) setSession(s);
-    })();
-
-    const { data: listener } = supabase.auth.onAuthStateChange(() => {
-      // when auth state changes, try to refresh profile
-      (async ()=>{
-        const s = await auth.getCurrentSession();
-        setSession(s);
-      })();
-    });
-
-    return ()=>{ mounted=false; listener?.subscription?.unsubscribe?.(); };
-  },[]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -233,28 +368,47 @@ function App() {
 
       <ToastProvider>
       <main className="main">
-        {(!session && active === 'landing') && (
+        {authState === AUTH_LOADING && (
+          <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: 24 }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-0.02em' }}>AttendX</div>
+              <p style={{ margin: '10px 0 0', color: '#9aa3c7' }}>Checking your session...</p>
+            </div>
+          </div>
+        )}
+
+        {authState === UNAUTHENTICATED && active === 'landing' && (
           <Landing onNavigate={navigate} students={students} />
         )}
 
-        {(!session && active === 'role-select') && (
+        {authState === UNAUTHENTICATED && active === 'role-select' && (
           <RoleSelection onNavigate={navigate} />
         )}
 
-        {(!session && active === 'professor-login') && (
+        {authState === UNAUTHENTICATED && active === 'professor-login' && (
           <ProfessorLogin onLogin={handleLogin} onBack={()=>navigate('role-select')} />
         )}
 
-        {(!session && active === 'student-login') && (
+        {authState === UNAUTHENTICATED && active === 'student-login' && (
           <StudentLogin students={students} onLogin={handleLogin} onBack={()=>navigate('role-select')} />
         )}
 
-        {!session && ['student-dashboard', 'dashboard', 'students', 'attendance', 'reports'].includes(active) && (
-          <AccessDenied reason="not-authenticated" />
+        {authState === UNAUTHENTICATED && active === 'student-dashboard' && (
+          <StudentLogin students={students} onLogin={handleLogin} onBack={()=>navigate('role-select')} />
+        )}
+
+        {authState === UNAUTHENTICATED && ['dashboard', 'students', 'attendance', 'reports'].includes(active) && (
+          <ProfessorLogin onLogin={handleLogin} onBack={()=>navigate('role-select')} />
         )}
 
         {session && active === "dashboard" && (
-          <RequireRole session={session} role="professor">
+          <RequireRole
+            session={session}
+            role="professor"
+            authLoading={authLoading}
+            roleLoading={roleLoading}
+            authState={authState}
+          >
             <Dashboard
               students={students}
               attendance={attendance}
@@ -266,7 +420,13 @@ function App() {
         )}
 
         {session && active === "students" && (
-          <RequireRole session={session} role="professor">
+          <RequireRole
+            session={session}
+            role="professor"
+            authLoading={authLoading}
+            roleLoading={roleLoading}
+            authState={authState}
+          >
             <StudentsPage
               students={students}
               setStudents={setStudentsWrapper}
@@ -277,7 +437,13 @@ function App() {
         )}
 
         {session && active === "attendance" && (
-          <RequireRole session={session} role="professor">
+          <RequireRole
+            session={session}
+            role="professor"
+            authLoading={authLoading}
+            roleLoading={roleLoading}
+            authState={authState}
+          >
             <AttendancePage
               students={students}
               attendance={attendance}
@@ -287,18 +453,61 @@ function App() {
         )}
 
         {session && active === "reports" && (
-          <RequireRole session={session} role="professor">
+          <RequireRole
+            session={session}
+            role="professor"
+            authLoading={authLoading}
+            roleLoading={roleLoading}
+            authState={authState}
+          >
             <ReportsPage students={students} attendance={attendance} />
           </RequireRole>
         )}
 
-        {session && active === 'student-dashboard' && (
-          <RequireRole session={session} role="student">
-            <StudentDashboard students={students} attendance={attendance} onLogout={handleLogout} session={session} />
+        {session && active === "analytics" && (
+          <RequireRole
+            session={session}
+            role="professor"
+            authLoading={authLoading}
+            roleLoading={roleLoading}
+            authState={authState}
+          >
+            <ProfessorAnalytics students={students} attendance={attendance} />
           </RequireRole>
         )}
-        {/* Fallback access denied when session exists but no matching view is allowed */}
-        {session && !['student-dashboard','dashboard','students','attendance','reports'].includes(active) && (
+
+        {session && active === "settings" && (
+          <RequireRole
+            session={session}
+            role="professor"
+            authLoading={authLoading}
+            roleLoading={roleLoading}
+            authState={authState}
+          >
+            <ProfessorSettings session={session} />
+          </RequireRole>
+        )}
+
+        {session && studentRoutes.includes(active) && (
+          <RequireRole
+            session={session}
+            role="student"
+            authLoading={authLoading}
+            roleLoading={roleLoading}
+            authState={authState}
+          >
+            <StudentDashboard
+              students={students}
+              attendance={attendance}
+              onLogout={handleLogout}
+              session={session}
+              view={active}
+              onNavigate={navigate}
+            />
+          </RequireRole>
+        )}
+        {/* Genuine access denials only after auth/role resolution is complete and the route is not in the user's valid route set. */}
+        {shouldShowAccessDenied && (
           <AccessDenied reason="forbidden" />
         )}
       </main>
