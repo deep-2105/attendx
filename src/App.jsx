@@ -188,6 +188,7 @@ function App() {
         setAuthState(restoredSession.profile ? AUTHENTICATED_ROLE_RESOLVED : AUTHENTICATED_ROLE_LOADING);
 
         if (restoredSession.profile) {
+          navigate(restoredSession.profile.role === 'professor' ? 'dashboard' : 'student-dashboard');
           const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
           const currentActive = activeFromPath(currentPath);
           const professorRoutes = ['dashboard', 'students', 'attendance', 'reports', 'analytics', 'settings'];
@@ -275,7 +276,7 @@ function App() {
     !allowedSessionRoutes.includes(active);
 
   const professorSidebar = session && session.profile?.role === 'professor' ? (
-    <aside className="ax-prof-sidebar">
+    <aside className="ax-prof-sidebar" aria-label="Professor sidebar">
       <div className="ax-prof-brand">
         <div className="ax-prof-brand-icon">A</div>
         <div>
@@ -285,66 +286,32 @@ function App() {
       </div>
 
       <nav className="ax-prof-nav" aria-label="Professor navigation">
-        <button
-          type="button"
-          className={`ax-prof-nav-item ${active === "dashboard" ? "active" : ""}`}
-          onClick={() => navigate("dashboard")}
-        >
-          <span className="ax-nav-icon">▦</span>
-          <span>Dashboard</span>
-        </button>
-
-        <button
-          type="button"
-          className={`ax-prof-nav-item ${active === "students" ? "active" : ""}`}
-          onClick={() => navigate("students")}
-        >
-          <span className="ax-nav-icon">◉</span>
-          <span>Students</span>
-        </button>
-
-        <button
-          type="button"
-          className={`ax-prof-nav-item ${active === "attendance" ? "active" : ""}`}
-          onClick={() => navigate("attendance")}
-        >
-          <span className="ax-nav-icon">✓</span>
-          <span>Attendance</span>
-        </button>
-
-        <button
-          type="button"
-          className={`ax-prof-nav-item ${active === "reports" ? "active" : ""}`}
-          onClick={() => navigate("reports")}
-        >
-          <span className="ax-nav-icon">▤</span>
-          <span>Reports</span>
-        </button>
-
-        <button
-          type="button"
-          className={`ax-prof-nav-item ${active === "analytics" ? "active" : ""}`}
-          onClick={() => navigate("analytics")}
-        >
-          <span className="ax-nav-icon">◌</span>
-          <span>Analytics</span>
-        </button>
-
-        <button
-          type="button"
-          className={`ax-prof-nav-item ${active === "settings" ? "active" : ""}`}
-          onClick={() => navigate("settings")}
-        >
-          <span className="ax-nav-icon">⚙</span>
-          <span>Settings</span>
-        </button>
+        {[
+          { key: 'dashboard', label: 'Dashboard', icon: '▦' },
+          { key: 'students', label: 'Students', icon: '◉' },
+          { key: 'attendance', label: 'Attendance', icon: '✓' },
+          { key: 'reports', label: 'Reports', icon: '▤' },
+          { key: 'analytics', label: 'Analytics', icon: '◌' },
+          { key: 'settings', label: 'Settings', icon: '⚙' },
+        ].map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            className={`ax-prof-nav-item ${active === item.key ? 'active' : ''}`}
+            onClick={() => navigate(item.key)}
+            aria-current={active === item.key ? 'page' : undefined}
+          >
+            <span className="ax-nav-icon" aria-hidden="true">{item.icon}</span>
+            <span>{item.label}</span>
+          </button>
+        ))}
       </nav>
 
       <div className="ax-prof-sidebar-bottom">
         <div className="ax-prof-profile">
-          <div className="ax-prof-avatar">PF</div>
+          <div className="ax-prof-avatar">{(session.profile?.full_name || session.profile?.name || 'P').charAt(0).toUpperCase()}</div>
           <div>
-            <strong>{session.profile?.full_name || session.profile?.name || session.email || 'Professor'}</strong>
+            <strong>{session.profile?.full_name || session.profile?.name || 'Professor'}</strong>
             <small>{session.profile?.department || 'Computer Science'}</small>
           </div>
         </div>

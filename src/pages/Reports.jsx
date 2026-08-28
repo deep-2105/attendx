@@ -39,15 +39,19 @@ function Donut({present, absent}){
 
 function Bars({data}){
   if(!data||!data.length) return <div style={{padding:20}}>No data</div>;
-  const max = Math.max(...data.map(d=>d.pct||0));
+  const max = Math.max(...data.map(d => Number.isFinite(d.pct) ? d.pct : 0), 1);
   return (
     <div style={{display:'flex',gap:12,alignItems:'end'}}>
-      {data.map(d=> (
-        <div key={d.id} style={{width:28}} title={`${d.name}: ${d.pct}%`}>
-          <div style={{height: Math.max(6, (d.pct/max)*120), background:'#6958dc', borderRadius:6}} />
-          <div style={{fontSize:11, marginTop:6}}>{d.pct}%</div>
-        </div>
-      ))}
+      {data.map(d=> {
+        const pct = Number.isFinite(d.pct) ? d.pct : 0;
+        const height = Math.max(6, (pct / max) * 120);
+        return (
+          <div key={d.id} style={{width:28}} title={`${d.name}: ${d.pct}%`}>
+            <div style={{height, background:'#6958dc', borderRadius:6}} />
+            <div style={{fontSize:11, marginTop:6}}>{d.pct}%</div>
+          </div>
+        );
+      })}
     </div>
   );
 }

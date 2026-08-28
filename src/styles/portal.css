@@ -348,8 +348,8 @@
   top: 0;
   height: 100vh;
   padding: 24px 14px;
-  border-right: 1px solid rgba(255, 255, 255, 0.09);
-  background: #090e24;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(9, 14, 34, 0.92);
   display: flex;
   flex-direction: column;
 }
@@ -357,14 +357,15 @@
 .ax-student-nav {
   margin-top: 20px;
   display: grid;
-  gap: 6px;
+  gap: 8px;
 }
 
-.ax-student-nav button,
-.ax-student-nav-item {
+.ax-student-nav-item,
+.ax-student-bottom-nav button,
+.ax-prof-nav-item {
   border: 1px solid transparent;
   background: transparent;
-  color: #c2d0eb;
+  color: #dfe9ff;
   padding: 11px 14px;
   border-radius: 10px;
   text-align: left;
@@ -378,19 +379,29 @@
   transition: all 180ms ease;
 }
 
-.ax-student-nav button:hover,
-.ax-student-nav-item:hover {
-  background: rgba(255, 255, 255, 0.07);
+.ax-student-nav-item:hover,
+.ax-student-bottom-nav button:hover,
+.ax-prof-nav-item:hover {
+  background: rgba(148, 163, 184, 0.08);
   color: #ffffff;
   border-color: rgba(137, 151, 255, 0.22);
 }
 
-.ax-student-nav button:hover .ax-nav-icon,
-.ax-student-nav-item:hover .ax-nav-icon {
+.ax-nav-icon,
+.ax-mobile-nav-icon {
+  color: #9bb4dc;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.2em;
+}
+
+.ax-student-nav-item:hover .ax-nav-icon,
+.ax-prof-nav-item:hover .ax-nav-icon,
+.ax-mobile-nav-item:hover .ax-mobile-nav-icon {
   color: #c4b5fd;
 }
 
-.ax-student-nav button:focus-visible,
 .ax-student-nav-item:focus-visible,
 .ax-student-bottom-nav button:focus-visible,
 .ax-prof-nav-item:focus-visible,
@@ -401,27 +412,32 @@
 .ax-secondary-btn:focus-visible,
 .ax-back-btn:focus-visible,
 .ax-table-search input:focus-visible,
-.ax-table-filters select:focus-visible {
+.ax-table-filters select:focus-visible,
+.ax-prof-view-toggle button:focus-visible {
   outline: 2px solid rgba(126, 86, 255, 0.9);
   outline-offset: 2px;
 }
 
-.ax-student-nav button.active,
-.ax-student-nav-item.active {
+.ax-student-nav-item.active,
+.ax-student-bottom-nav button.active,
+.ax-prof-nav-item.active {
   color: #ffffff;
   font-weight: 600;
-  background: linear-gradient(90deg, rgba(124, 58, 237, 0.35), rgba(59, 130, 246, 0.20));
+  background: linear-gradient(90deg, rgba(124, 58, 237, 0.35), rgba(59, 130, 246, 0.2));
   border-color: rgba(124, 58, 237, 0.65);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
-.ax-student-nav button.active .ax-nav-icon,
-.ax-student-nav-item.active .ax-nav-icon {
+.ax-student-nav-item.active .ax-nav-icon,
+.ax-prof-nav-item.active .ax-nav-icon,
+.ax-mobile-nav-item.active .ax-mobile-nav-icon {
   color: #a78bfa;
 }
 
-.ax-student-nav button.active:hover,
-.ax-student-nav-item.active:hover {
+.ax-student-nav-item.active:hover,
+.ax-prof-nav-item.active:hover,
+.ax-student-bottom-nav button.active:hover,
+.ax-mobile-nav-item.active:hover {
   background: linear-gradient(90deg, rgba(124, 58, 237, 0.45), rgba(59, 130, 246, 0.28));
   border-color: rgba(124, 58, 237, 0.8);
   color: #ffffff;
@@ -508,12 +524,6 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-}
-
-.ax-student-top-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
 }
 
 .ax-prof-head {
@@ -886,8 +896,8 @@
   left: 0;
   top: 0;
   bottom: 0;
-  background: #090e24;
-  border-right: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(9, 14, 34, 0.92);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
   padding: 20px 14px;
   display: flex;
   flex-direction: column;
@@ -910,7 +920,7 @@
 }
 
 .ax-prof-brand span {
-  color: #94a3b8;
+  color: #9fb1d4;
   font-size: 0.72rem;
   display: block;
 }
@@ -944,7 +954,7 @@
   font-weight: 500;
   line-height: 1.2;
   padding: 11px 14px;
-  color: #c2d0eb;
+  color: #dfe9ff;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 10px;
@@ -958,7 +968,7 @@
 }
 
 .ax-prof-nav-item:hover {
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(148, 163, 184, 0.08);
   color: #ffffff;
   border-color: rgba(137, 151, 255, 0.22);
 }
@@ -970,7 +980,7 @@
 .ax-prof-nav-item.active {
   color: #ffffff;
   font-weight: 600;
-  background: linear-gradient(90deg, rgba(124, 58, 237, 0.35), rgba(59, 130, 246, 0.20));
+  background: linear-gradient(90deg, rgba(124, 58, 237, 0.35), rgba(59, 130, 246, 0.2));
   border-color: rgba(124, 58, 237, 0.65);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
@@ -987,7 +997,7 @@
 
 .ax-prof-sidebar-bottom {
   margin-top: auto;
-  border-top: 1px solid rgba(255, 255, 255, 0.09);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding-top: 14px;
 }
 
@@ -1437,6 +1447,7 @@
 
   .ax-prof-sidebar {
     width: 82px;
+    padding: 10px 8px;
     padding: 14px 8px;
   }
 
@@ -1450,13 +1461,16 @@
   }
 
   .ax-prof-nav-item {
+    font-size: 0;
     justify-content: center;
     padding: 12px;
   }
 
+  .ax-prof-nav-item span,
   .ax-prof-nav-item .ax-nav-icon,
   .ax-prof-brand-icon,
   .ax-prof-avatar {
+    font-size: 0.85rem;
     font-size: 1.1rem;
   }
 
@@ -1492,7 +1506,23 @@
 
   .ax-student-main {
     padding: 12px;
+    padding-bottom: 72px;
     padding-bottom: 84px;
+  }
+
+  .ax-student-bottom-nav {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(9, 13, 34, 0.92);
+    padding: 6px;
+    z-index: 20;
   }
 
   .ax-prof-sidebar {
@@ -1500,6 +1530,7 @@
     top: 0;
     width: 100%;
     height: auto;
+    padding: 8px;
     padding: 10px 12px;
     flex-direction: row;
     align-items: center;
@@ -1521,10 +1552,17 @@
 
   .ax-prof-nav-item {
     white-space: nowrap;
+    font-size: 0.76rem;
     font-size: 0.8rem;
     padding: 8px 12px;
   }
 
+  .ax-prof-brand h2,
+  .ax-prof-brand span,
+  .ax-prof-profile strong,
+  .ax-prof-profile small,
+  .ax-prof-nav-item {
+    font-size: initial;
   .ax-prof-sidebar-bottom {
     display: none;
   }
@@ -1532,6 +1570,7 @@
   .app.with-sidebar .main {
     margin-left: 0;
     width: 100%;
+    padding: 10px;
     padding: 12px;
   }
 
@@ -1564,6 +1603,7 @@
   }
 }
 
+@media (max-width: 430px) {
 @media (max-width: 480px) {
   .ax-brand strong {
     font-size: 1.42rem;

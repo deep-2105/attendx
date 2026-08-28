@@ -434,8 +434,9 @@ export default function StudentDashboard({ students, attendance, onLogout, sessi
               type="button"
               className={`ax-student-nav-item ${view === item.key ? 'active' : ''}`}
               onClick={() => onNavigate(item.key)}
+              aria-current={view === item.key ? 'page' : undefined}
             >
-              <span className="ax-nav-icon">{item.icon}</span>
+              <span className="ax-nav-icon" aria-hidden="true">{item.icon}</span>
               <span>{item.label}</span>
             </button>
           ))}
@@ -466,6 +467,7 @@ export default function StudentDashboard({ students, attendance, onLogout, sessi
           </div>
 
           <div className="ax-student-top-actions">
+            <button className="ax-icon-btn" aria-label="Notifications" type="button">🔔</button>
             <div className="ax-student-user-info">
               <strong>{student.name || 'Student'}</strong>
               <small>{student.roll && student.roll !== 'N/A' ? `Roll: ${student.roll}` : 'Student'}</small>
@@ -485,13 +487,14 @@ export default function StudentDashboard({ students, attendance, onLogout, sessi
               type="button"
               className={`ax-mobile-nav-item ${view === item.key ? 'active' : ''}`}
               onClick={() => onNavigate(item.key)}
+              aria-current={view === item.key ? 'page' : undefined}
             >
-              <span className="ax-mobile-nav-icon">{item.icon}</span>
+              <span className="ax-mobile-nav-icon" aria-hidden="true">{item.icon}</span>
               <span className="ax-mobile-nav-label">{item.label}</span>
             </button>
           ))}
           <button type="button" className="ax-mobile-nav-item ax-mobile-logout" onClick={onLogout}>
-            <span className="ax-mobile-nav-icon">⏻</span>
+            <span className="ax-mobile-nav-icon" aria-hidden="true">⏻</span>
             <span className="ax-mobile-nav-label">Logout</span>
           </button>
         </nav>

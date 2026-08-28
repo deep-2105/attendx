@@ -115,11 +115,6 @@ export async function signOut() {
   }
 }
 
-export const DEMO = {
-  professor: { email: 'professor@attendx.com' },
-  studentPassword: 'student123',
-};
-
 export default {
   getCurrentSession,
   onAuthStateChange,
