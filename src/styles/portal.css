@@ -1563,6 +1563,8 @@
   .ax-prof-profile small,
   .ax-prof-nav-item {
     font-size: initial;
+  }
+
   .ax-prof-sidebar-bottom {
     display: none;
   }
@@ -1604,6 +1606,8 @@
 }
 
 @media (max-width: 430px) {
+}
+
 @media (max-width: 480px) {
   .ax-brand strong {
     font-size: 1.42rem;
