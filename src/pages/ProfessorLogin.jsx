@@ -94,7 +94,6 @@ export default function ProfessorLogin({ onLogin, onBack }){
                 <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
                 Remember me
               </label>
-              <button type="button" className="ax-link-btn">Forgot Password?</button>
             </div>
 
             {error && <div className="ax-form-error">{error}</div>}
@@ -104,7 +103,6 @@ export default function ProfessorLogin({ onLogin, onBack }){
               {loading ? 'Logging in...' : 'Login as Professor'}
             </button>
 
-            <button type="button" className="ax-secondary-btn">Create Professor Account</button>
             <button type="button" className="ax-back-btn" onClick={onBack}>Back to AttendX</button>
           </form>
         </div>

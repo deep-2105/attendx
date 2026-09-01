@@ -18,7 +18,6 @@ export default function RoleSelection({ onNavigate }){
         </div>
 
         <div className="ax-topbar-actions">
-          <button className="ax-icon-btn" aria-label="Toggle theme">☼</button>
           <button className="ax-ghost-btn" onClick={() => onNavigate('role-select')}>Login</button>
         </div>
       </header>

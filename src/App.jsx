@@ -360,11 +360,11 @@ function App() {
           <StudentLogin students={students} onLogin={handleLogin} onBack={()=>navigate('role-select')} />
         )}
 
-        {authState === UNAUTHENTICATED && active === 'student-dashboard' && (
+        {authState === UNAUTHENTICATED && studentRoutes.includes(active) && (
           <StudentLogin students={students} onLogin={handleLogin} onBack={()=>navigate('role-select')} />
         )}
 
-        {authState === UNAUTHENTICATED && ['dashboard', 'students', 'attendance', 'reports'].includes(active) && (
+        {authState === UNAUTHENTICATED && ['dashboard', 'students', 'attendance', 'reports', 'analytics', 'settings'].includes(active) && (
           <ProfessorLogin onLogin={handleLogin} onBack={()=>navigate('role-select')} />
         )}
 
