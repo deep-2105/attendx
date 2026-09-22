@@ -38,3 +38,8 @@ Large dashboards should adapt to tablet and mobile widths. Tables, charts and na
 ## Design Principle
 
 Visual polish should improve clarity and usability. Effects, gradients and decorative elements should remain secondary to the actual attendance workflow.
+
+
+## Review Rule
+
+Review visual changes for consistency across both authenticated portals before merging.
