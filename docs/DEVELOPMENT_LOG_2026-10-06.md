@@ -15,3 +15,5 @@
 - Documented the analytics scope for attendance trends and student performance insights.
 
 - Documented responsive UI expectations for desktop, tablet, and mobile layouts.
+
+- Documented the project direction for authenticated access and protected role-based data.
