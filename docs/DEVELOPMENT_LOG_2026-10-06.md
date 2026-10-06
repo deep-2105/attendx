@@ -11,3 +11,5 @@
 - Documented the main dashboard areas including attendance summaries, trends, and at-risk indicators.
 
 - Documented the reporting flow and export-oriented project requirements.
+
+- Documented the analytics scope for attendance trends and student performance insights.
