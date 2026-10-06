@@ -7,3 +7,5 @@
 - Documented the core attendance workflow from student records through attendance reporting.
 
 - Documented the separate professor and student portal responsibilities.
+
+- Documented the main dashboard areas including attendance summaries, trends, and at-risk indicators.
