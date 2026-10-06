@@ -13,3 +13,5 @@
 - Documented the reporting flow and export-oriented project requirements.
 
 - Documented the analytics scope for attendance trends and student performance insights.
+
+- Documented responsive UI expectations for desktop, tablet, and mobile layouts.
