@@ -9,3 +9,5 @@
 - Documented the separate professor and student portal responsibilities.
 
 - Documented the main dashboard areas including attendance summaries, trends, and at-risk indicators.
+
+- Documented the reporting flow and export-oriented project requirements.
