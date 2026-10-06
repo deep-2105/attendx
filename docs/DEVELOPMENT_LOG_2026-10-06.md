@@ -5,3 +5,5 @@
 - Recorded the October 6 development checkpoint for the AttendX project.
 
 - Documented the core attendance workflow from student records through attendance reporting.
+
+- Documented the separate professor and student portal responsibilities.
