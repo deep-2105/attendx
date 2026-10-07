@@ -17,3 +17,5 @@
 - Documented settings and profile areas for the role-based portals.
 
 - Documented responsive experience goals across supported screen sizes.
+
+- Recorded the completed October 7 development milestone.
