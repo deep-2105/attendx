@@ -5,3 +5,5 @@
 - Recorded today's AttendX development checkpoint.
 
 - Documented the student attendance viewing flow.
+
+- Documented the professor attendance management workflow.
