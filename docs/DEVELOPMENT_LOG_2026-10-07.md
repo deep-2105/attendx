@@ -15,3 +15,5 @@
 - Documented the analytics module and trend insights.
 
 - Documented settings and profile areas for the role-based portals.
+
+- Documented responsive experience goals across supported screen sizes.
