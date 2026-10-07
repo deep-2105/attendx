@@ -9,3 +9,5 @@
 - Documented the professor attendance management workflow.
 
 - Documented the attendance shortage and at-risk tracking direction.
+
+- Documented the reports module and attendance summaries.
