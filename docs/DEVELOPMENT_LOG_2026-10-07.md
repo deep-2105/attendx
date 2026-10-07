@@ -13,3 +13,5 @@
 - Documented the reports module and attendance summaries.
 
 - Documented the analytics module and trend insights.
+
+- Documented settings and profile areas for the role-based portals.
