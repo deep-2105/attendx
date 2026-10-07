@@ -11,3 +11,5 @@
 - Documented the attendance shortage and at-risk tracking direction.
 
 - Documented the reports module and attendance summaries.
+
+- Documented the analytics module and trend insights.
