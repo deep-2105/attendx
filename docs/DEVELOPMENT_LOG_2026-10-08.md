@@ -9,3 +9,5 @@
 - Documented dashboard insight and summary requirements.
 
 - Documented the student portal experience milestone.
+
+- Documented the professor portal experience milestone.
