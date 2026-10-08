@@ -7,3 +7,5 @@
 - Documented the attendance management milestone.
 
 - Documented dashboard insight and summary requirements.
+
+- Documented the student portal experience milestone.
