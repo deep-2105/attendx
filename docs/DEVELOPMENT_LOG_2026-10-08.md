@@ -13,3 +13,5 @@
 - Documented the professor portal experience milestone.
 
 - Documented reporting and analytics progress.
+
+- Recorded the completed October 8 development milestone.
