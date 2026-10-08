@@ -11,3 +11,5 @@
 - Documented the student portal experience milestone.
 
 - Documented the professor portal experience milestone.
+
+- Documented reporting and analytics progress.
