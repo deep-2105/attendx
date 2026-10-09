@@ -11,3 +11,5 @@
 - Documented student portal experience goals.
 
 - Documented reporting and attendance summary goals.
+
+- Recorded the October 9 development progress checkpoint.
