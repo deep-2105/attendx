@@ -9,3 +9,5 @@
 - Documented dashboard usability goals.
 
 - Documented student portal experience goals.
+
+- Documented reporting and attendance summary goals.
