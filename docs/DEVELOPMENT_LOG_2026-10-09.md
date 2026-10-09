@@ -5,3 +5,5 @@
 - Recorded the October 9 AttendX development checkpoint.
 
 - Documented the attendance workflow milestone.
+
+- Documented dashboard usability goals.
