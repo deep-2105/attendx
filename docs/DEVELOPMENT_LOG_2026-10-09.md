@@ -7,3 +7,5 @@
 - Documented the attendance workflow milestone.
 
 - Documented dashboard usability goals.
+
+- Documented student portal experience goals.
