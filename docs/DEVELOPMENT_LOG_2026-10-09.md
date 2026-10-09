@@ -1,0 +1,5 @@
+# AttendX — Development Log
+
+## October 9, 2026
+
+- Recorded the October 9 AttendX development checkpoint.
