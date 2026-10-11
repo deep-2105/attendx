@@ -5,3 +5,5 @@
 - Recorded the October 11 AttendX development checkpoint.
 
 - Documented the attendance workflow review milestone.
+
+- Documented portal usability and navigation review goals.
