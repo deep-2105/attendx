@@ -9,3 +9,5 @@
 - Documented the dashboard usability review checkpoint.
 
 - Documented a review checkpoint for the student and professor portals.
+
+- Recorded the October 16 project progress checkpoint.
