@@ -7,3 +7,5 @@
 - Documented the attendance workflow review milestone.
 
 - Documented the dashboard usability review checkpoint.
+
+- Documented a review checkpoint for the student and professor portals.
