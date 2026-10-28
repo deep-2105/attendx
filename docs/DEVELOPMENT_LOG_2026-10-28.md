@@ -3,3 +3,5 @@
 ## October 28, 2026
 
 - Recorded the October 28 AttendX development checkpoint.
+
+- Documented the attendance workflow review milestone for October 28.
