@@ -7,3 +7,5 @@
 - Documented the attendance workflow review checkpoint for November 5.
 
 - Documented the dashboard review milestone for November 5.
+
+- Documented the student and professor portal review checkpoint.
