@@ -3,3 +3,5 @@
 ## November 5, 2026
 
 - Recorded the November 5 AttendX development checkpoint.
+
+- Documented the attendance workflow review checkpoint for November 5.
