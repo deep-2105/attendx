@@ -9,3 +9,5 @@
 - Documented the dashboard review checkpoint for November 10.
 
 - Documented the student and professor portal review checkpoint for November 10.
+
+- Recorded the November 10 project progress checkpoint.
