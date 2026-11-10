@@ -5,3 +5,5 @@
 - Recorded the November 10 AttendX development checkpoint.
 
 - Documented the attendance workflow review checkpoint for November 10.
+
+- Documented the dashboard review checkpoint for November 10.
